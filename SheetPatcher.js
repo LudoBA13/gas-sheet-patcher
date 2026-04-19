@@ -62,6 +62,12 @@ class SheetPatcher
 	 */
 	_patchRow(rowNumber, newDataRow, existingDataRow)
 	{
+		// Fast check if the row is identical
+		if (this._rangesMatch(newDataRow, existingDataRow))
+		{
+			return;
+		}
+
 		let startCol = -1;
 
 		for (let c = 0; c < newDataRow.length; c++)
@@ -123,6 +129,14 @@ class SheetPatcher
 	 */
 	_alignRows(newData)
 	{
+		const existingRows = this.sheet.getRange(1, 1, this.sheet.getLastRow(), 1).getValues().map(r => r[0]);
+		const newRows = newData.map(r => r[0]);
+		
+		if (this._rangesMatch(newRows, existingRows))
+		{
+			return;
+		}
+
 		let sheetIndex = 1;
 		let dataIndex = 0;
 
@@ -168,6 +182,13 @@ class SheetPatcher
 	 */
 	_alignColumns(newHeaderRow)
 	{
+		const existingCols = this.sheet.getRange(1, 1, 1, this.sheet.getLastColumn()).getValues()[0];
+		
+		if (this._rangesMatch(newHeaderRow, existingCols))
+		{
+			return;
+		}
+
 		let sheetIndex = 1;
 		let dataIndex = 0;
 
@@ -224,15 +245,22 @@ class SheetPatcher
 
 		for (let r = 0; r < numRows; r++)
 		{
-			for (let c = 0; c < numCols; c++)
+			const match = this._rangesMatch(data[r], currentData[r]);
+			if (!match)
 			{
-				if (this._compare(data[r][c], currentData[r][c]))
-				{
-					return false;
-				}
+				return false;
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * Compares two ranges for equality using JSON.stringify.
+	 * @private
+	 */
+	_rangesMatch(range1, range2)
+	{
+		return JSON.stringify(range1) === JSON.stringify(range2);
 	}
 
 	/**
