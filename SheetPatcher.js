@@ -9,6 +9,9 @@
  */
 class SheetPatcher
 {
+	/**
+	 * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet The sheet to patch.
+	 */
 	constructor(sheet)
 	{
 		this.sheet = sheet;
@@ -18,6 +21,9 @@ class SheetPatcher
 
 	/**
 	 * Instantiates SheetPatcher and replaces content with newData.
+	 * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet The sheet to patch.
+	 * @param {any[][]} newData The 2D array of data to apply to the sheet.
+	 * @return {void}
 	 */
 	static patch(sheet, newData)
 	{
@@ -26,6 +32,8 @@ class SheetPatcher
 
 	/**
 	 * Aligns sheet structure and replaces content with newData.
+	 * @param {any[][]} newData The 2D array of data to apply to the sheet.
+	 * @return {void}
 	 */
 	replace(newData)
 	{
@@ -73,6 +81,10 @@ class SheetPatcher
 
 	/**
 	 * Patches only the cells within a row that have changed.
+	 * @param {number} rowNumber The 1-based index of the row to patch.
+	 * @param {any[]} newDataRow The new data for the row.
+	 * @param {any[]} existingDataRow The current data in the sheet for the row.
+	 * @return {void}
 	 * @private
 	 */
 	_patchRow(rowNumber, newDataRow, existingDataRow)
@@ -112,6 +124,10 @@ class SheetPatcher
 
 	/**
 	 * Detects columns effectively empty in the sheet but populated in newData.
+	 * @param {any[][]} newData The 2D array of new data.
+	 * @param {number} numRows Total number of rows in newData.
+	 * @param {number} numCols Total number of columns in newData.
+	 * @return {void}
 	 * @private
 	 */
 	_recoverEmptyColumns(newData, numRows, numCols)
@@ -140,6 +156,8 @@ class SheetPatcher
 
 	/**
 	 * Adjusts rows based on the first column of newData.
+	 * @param {any[][]} newData The 2D array of new data.
+	 * @return {void}
 	 * @private
 	 */
 	_alignRows(newData)
@@ -193,6 +211,8 @@ class SheetPatcher
 
 	/**
 	 * Adjusts columns based on the first row of newData.
+	 * @param {any[]} newHeaderRow The first row of newData containing headers.
+	 * @return {void}
 	 * @private
 	 */
 	_alignColumns(newHeaderRow)
@@ -246,6 +266,8 @@ class SheetPatcher
 
 	/**
 	 * Checks if the entire sheet matches the provided 2D array.
+	 * @param {any[][]} data The 2D array to compare against the sheet content.
+	 * @return {boolean} True if the sheet matches the data, false otherwise.
 	 */
 	matches(data)
 	{
@@ -271,6 +293,9 @@ class SheetPatcher
 
 	/**
 	 * Compares two ranges for equality using JSON.stringify.
+	 * @param {any[]} range1 The first range to compare.
+	 * @param {any[]} range2 The second range to compare.
+	 * @return {boolean} True if the ranges are equal, false otherwise.
 	 * @private
 	 */
 	_rangesMatch(range1, range2)
@@ -280,6 +305,9 @@ class SheetPatcher
 
 	/**
 	 * Internal comparison logic.
+	 * @param {any} val1 The first value to compare.
+	 * @param {any} val2 The second value to compare.
+	 * @return {boolean} True if values differ, false if they are equal.
 	 * @private
 	 */
 	_compare(val1, val2)
