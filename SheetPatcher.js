@@ -1,12 +1,27 @@
 /**
  * SheetPatcher Class
  * Handles structural alignment, column recovery, and granular minimal-diff updates.
+ *
+ * Requirements:
+ * - The sheet MUST have headers in the first row.
+ * - The first column MUST be used for identification of the row.
+ * - IDs SHOULD be unique.
  */
 class SheetPatcher
 {
 	constructor(sheet)
 	{
 		this.sheet = sheet;
+		this.headers = this.sheet.getRange(1, 1, 1, this.sheet.getLastColumn()).getValues()[0];
+		this.ids = this.sheet.getRange(2, 1, this.sheet.getLastRow() - 1, 1).getValues().map(row => row[0]);
+	}
+
+	/**
+	 * Instantiates SheetPatcher and replaces content with newData.
+	 */
+	static patch(sheet, newData)
+	{
+		new SheetPatcher(sheet).replace(newData);
 	}
 
 	/**
