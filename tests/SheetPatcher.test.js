@@ -1,6 +1,7 @@
 const { MockSheet } = require('./MockSheet');
 const { SeriesPatcher } = require('../src/SeriesPatcher');
-const { RowAlignmentApplier, ColumnAlignmentApplier } = require('../src/AlignmentPlanner');
+const { RowAlignmentApplier } = require('../src/RowAlignmentApplier');
+const { ColumnAlignmentApplier } = require('../src/ColumnAlignmentApplier');
 const { SheetPatcher } = require('../src/SheetPatcher');
 
 // Mock global environment for GAS classes
