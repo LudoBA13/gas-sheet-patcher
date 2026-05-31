@@ -18,7 +18,7 @@ class MockSheet
 		return this.data.length > 0 ? this.data[0].length : 0;
 	}
 
-	getRange(row, col, numRows, numCols)
+	getRange(row, col, numRows = 1, numCols = 1)
 	{
 		return new MockRange(this, row, col, numRows, numCols);
 	}
@@ -60,6 +60,25 @@ class MockSheet
 		for (const row of this.data)
 		{
 			row.splice(col - 1, numCols);
+		}
+	}
+
+	moveRows(rowSpec, destinationIndex)
+	{
+		const startRow = rowSpec.row;
+		const numRows = rowSpec.numRows;
+		const rowsToMove = this.data.splice(startRow - 1, numRows);
+		this.data.splice(destinationIndex - 1, 0, ...rowsToMove);
+	}
+
+	moveColumns(columnSpec, destinationIndex)
+	{
+		const startCol = columnSpec.col;
+		const numCols = columnSpec.numCols;
+		for (const row of this.data)
+		{
+			const colsToMove = row.splice(startCol - 1, numCols);
+			row.splice(destinationIndex - 1, 0, ...colsToMove);
 		}
 	}
 }

@@ -1,28 +1,116 @@
 /**
- * AlignmentPlanner Class
- * Determines the sequence of 'insert' and 'remove' actions to align two sequences.
+ * Abstract Base Class for applying structural alignment actions to a Sheet.
  */
-class AlignmentPlanner
+class AlignmentApplier
 {
 	/**
-	 * @param {any[]} current The existing sequence of values.
+	 * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet The sheet to apply actions to.
 	 */
-	constructor(current)
+	constructor(sheet)
 	{
-		this.current = current;
+		if (this.constructor === AlignmentApplier)
+		{
+			throw new TypeError('Abstract class "AlignmentApplier" cannot be instantiated directly.');
+		}
+		this.sheet = sheet;
 	}
 
 	/**
-	 * Compares target sequence against current sequence and generates alignment actions.
-	 * Actions are intended to be applied in reverse index order.
-	 *
-	 * @param {any[]} target The desired sequence of values.
-	 * @return {Array<{type: string, index: number}>} An array of action objects.
+	 * Applies a sequence of actions from SeriesPatcher.
+	 * @param {object[]} actions List of actions.
+	 * @return {void}
 	 */
-	planFor(target)
+	apply(actions)
 	{
-		// TODO: Implement alignment logic (e.g., using LCS or simple greedy matching)
-		const actions = [];
-		return actions;
+		for (const action of actions)
+		{
+			switch (action.type)
+			{
+				case 'delete':
+					this.delete(action.index);
+					break;
+				case 'insert':
+					this.insert(action.index);
+					break;
+				case 'move':
+					this.move(action.from, action.to);
+					break;
+			}
+		}
 	}
+
+	/**
+	 * @param {number} index 0-based index to delete.
+	 * @abstract
+	 */
+	delete(index)
+	{
+		throw new Error('Method "delete" must be implemented.');
+	}
+
+	/**
+	 * @param {number} index 0-based index to insert at.
+	 * @abstract
+	 */
+	insert(index)
+	{
+		throw new Error('Method "insert" must be implemented.');
+	}
+
+	/**
+	 * @param {number} from 0-based source index.
+	 * @param {number} to 0-based target index.
+	 * @abstract
+	 */
+	move(from, to)
+	{
+		throw new Error('Method "move" must be implemented.');
+	}
+}
+
+/**
+ * Concrete implementation for applying actions to rows.
+ */
+class RowAlignmentApplier extends AlignmentApplier
+{
+	delete(index)
+	{
+		this.sheet.deleteRow(index + 1);
+	}
+
+	insert(index)
+	{
+		this.sheet.insertRowBefore(index + 1);
+	}
+
+	move(from, to)
+	{
+		this.sheet.moveRows(this.sheet.getRange(from + 1, 1), to + 1);
+	}
+}
+
+/**
+ * Concrete implementation for applying actions to columns.
+ */
+class ColumnAlignmentApplier extends AlignmentApplier
+{
+	delete(index)
+	{
+		this.sheet.deleteColumn(index + 1);
+	}
+
+	insert(index)
+	{
+		this.sheet.insertColumnBefore(index + 1);
+	}
+
+	move(from, to)
+	{
+		this.sheet.moveColumns(this.sheet.getRange(1, from + 1), to + 1);
+	}
+}
+
+if (typeof module !== 'undefined')
+{
+	module.exports = { AlignmentApplier, RowAlignmentApplier, ColumnAlignmentApplier };
 }

@@ -211,3 +211,8 @@ class SeriesPatcher
 		working.splice(toIndex, 0, value);
 	}
 }
+
+if (typeof module !== 'undefined')
+{
+	module.exports = { SeriesPatcher };
+}

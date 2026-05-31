@@ -165,48 +165,8 @@ class SheetPatcher
 		const existingRows = this.sheet.getRange(1, 1, this.sheet.getLastRow(), 1).getValues().map(r => r[0]);
 		const newRows = newData.map(r => r[0]);
 		
-		if (this._rangesMatch(newRows, existingRows))
-		{
-			return;
-		}
-
-		let sheetIndex = 1;
-		let dataIndex = 0;
-
-		while (dataIndex < newData.length)
-		{
-			const newValue = newData[dataIndex][0];
-			let currentSheetValue = null;
-			if (sheetIndex <= this.sheet.getLastRow())
-			{
-				currentSheetValue = this.sheet.getRange(sheetIndex, 1).getValue();
-			}
-
-			if (this._compare(newValue, currentSheetValue) === false)
-			{
-				sheetIndex++;
-				dataIndex++;
-				continue;
-			}
-
-			const remainsInData = newData.slice(dataIndex).some(row => !this._compare(row[0], currentSheetValue));
-
-			if (!remainsInData && sheetIndex <= this.sheet.getLastRow())
-			{
-				this.sheet.deleteRow(sheetIndex);
-				continue;
-			}
-
-			this.sheet.insertRowBefore(sheetIndex);
-			sheetIndex++;
-			dataIndex++;
-		}
-
-		const finalSheetRows = this.sheet.getLastRow();
-		if (finalSheetRows > newData.length)
-		{
-			this.sheet.deleteRows(newData.length + 1, finalSheetRows - newData.length);
-		}
+		const actions = SeriesPatcher.patch(existingRows, newRows);
+		new RowAlignmentApplier(this.sheet).apply(actions);
 	}
 
 	/**
@@ -219,49 +179,8 @@ class SheetPatcher
 	{
 		const existingCols = this.sheet.getRange(1, 1, 1, this.sheet.getLastColumn()).getValues()[0];
 		
-		if (this._rangesMatch(newHeaderRow, existingCols))
-		{
-			return;
-		}
-
-		let sheetIndex = 1;
-		let dataIndex = 0;
-
-		while (dataIndex < newHeaderRow.length)
-		{
-			const newValue = newHeaderRow[dataIndex];
-			let currentSheetValue = null;
-
-			if (sheetIndex <= this.sheet.getLastColumn())
-			{
-				currentSheetValue = this.sheet.getRange(1, sheetIndex).getValue();
-			}
-
-			if (this._compare(newValue, currentSheetValue) === false)
-			{
-				sheetIndex++;
-				dataIndex++;
-				continue;
-			}
-
-			const remainsInData = newHeaderRow.slice(dataIndex).some(val => !this._compare(val, currentSheetValue));
-
-			if (!remainsInData && sheetIndex <= this.sheet.getLastColumn())
-			{
-				this.sheet.deleteColumn(sheetIndex);
-				continue;
-			}
-
-			this.sheet.insertColumnBefore(sheetIndex);
-			sheetIndex++;
-			dataIndex++;
-		}
-
-		const finalSheetCols = this.sheet.getLastColumn();
-		if (finalSheetCols > newHeaderRow.length)
-		{
-			this.sheet.deleteColumns(newHeaderRow.length + 1, finalSheetCols - newHeaderRow.length);
-		}
+		const actions = SeriesPatcher.patch(existingCols, newHeaderRow);
+		new ColumnAlignmentApplier(this.sheet).apply(actions);
 	}
 
 	/**
@@ -318,4 +237,9 @@ class SheetPatcher
 		}
 		return val1 !== val2;
 	}
+}
+
+if (typeof module !== 'undefined')
+{
+	module.exports = { SheetPatcher };
 }
