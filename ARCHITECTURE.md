@@ -40,5 +40,6 @@ The library performs row alignment before column alignment in `SheetPatcher`. Th
 ## Key Performance Considerations
 - **Minimizing API Calls**: Google Apps Script's `SpreadsheetApp` API calls are expensive. The library mitigates this by:
     - Batching cell updates using `setValues` for contiguous changed blocks.
+- **Optimized Column Recovery**: To minimize expensive sheet scans, the library conditionally triggers the empty column recovery process only when a column insertion has been detected during structural alignment.
     - Using structural alignment to only update what is necessary.
 - **Structural Integrity**: The library assumes the first row contains headers and the first column contains row identifiers. These are used as the "anchor" for reordering, insertion, and deletion operations.

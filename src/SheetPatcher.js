@@ -44,7 +44,7 @@ class SheetPatcher
 
 		// 1. Structural Alignment
 		this._alignRows(newData);
-		this._alignColumns(newData[0]);
+		const colActions = this._alignColumns(newData[0]);
 
 		// Ensure structural changes are committed before reading current state
 		SpreadsheetApp.flush();
@@ -53,7 +53,10 @@ class SheetPatcher
 		const numCols = newData[0].length;
 
 		// 2. Recovery & Patching
-		this._recoverEmptyColumns(newData, numRows, numCols);
+		if (colActions.some(action => action.type === 'insert'))
+		{
+			this._recoverEmptyColumns(newData, numRows, numCols);
+		}
 
 		const range = this.sheet.getRange(1, 1, numRows, numCols);
 		const existingData = range.getValues();
@@ -181,6 +184,7 @@ class SheetPatcher
 		
 		const actions = SeriesPatcher.patch(existingCols, newHeaderRow);
 		new ColumnAlignmentApplier(this.sheet).apply(actions);
+		return actions;
 	}
 
 	/**
