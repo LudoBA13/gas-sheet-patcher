@@ -55,16 +55,32 @@ function test4MoveAndSwapColumns()
 	runTest(fillSheet, (sheet) =>
 	{
 		const numRows = sheet.getLastRow();
+		
+		// Swap columns 5 and 6 using robust value reassignment
+		const col5Values = sheet.getRange(1, 5, numRows, 1).getValues();
+		const col6Values = sheet.getRange(1, 6, numRows, 1).getValues();
+		sheet.getRange(1, 5, numRows, 1).setValues(col6Values);
+		sheet.getRange(1, 6, numRows, 1).setValues(col5Values);
+		
 		// Move column 11 to position 3
 		sheet.moveColumns(sheet.getRange(1, 11, numRows, 1), 3);
+	});
+}
+
+/**
+ * Test case: Move 2 after 7, then move 2 before 6.
+ */
+function test5MoveAndMoveColumn()
+{
+	runTest(fillSheet, (sheet) =>
+	{
+		const numRows = sheet.getLastRow();
 		
-		// Swap columns 5 and 6
-		// Native sheet.moveColumns might behave differently based on the move sequence,
-		// but using temporary column insertion is the standard way to swap in Sheets.
-		sheet.insertColumnAfter(6); // Insert empty col after 6
-		sheet.moveColumns(sheet.getRange(1, 5, numRows, 1), 7); // Move 5 to after 6
-		sheet.moveColumns(sheet.getRange(1, 6, numRows, 1), 5); // Move 6 to 5
-		sheet.deleteColumn(7); // Delete original col 5 now at 7
+		// Move column 2 to after column 7 (destination index 8 for moveBefore)
+		sheet.moveColumns(sheet.getRange(1, 2, numRows, 1), 8);
+		
+		// Move column 2 (now at index 7) before column 6
+		sheet.moveColumns(sheet.getRange(1, 7, numRows, 1), 6);
 	});
 }
 
