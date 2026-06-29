@@ -68,7 +68,4 @@ class AlignmentApplier
 	}
 }
 
-if (typeof module !== 'undefined')
-{
-	module.exports = { AlignmentApplier };
-}
+

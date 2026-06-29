@@ -1,7 +1,3 @@
-if (typeof module !== 'undefined')
-{
-	var { AlignmentApplier } = require('./AlignmentApplier');
-}
 
 /**
  * Concrete implementation for applying actions to columns.
@@ -22,9 +18,4 @@ class ColumnAlignmentApplier extends AlignmentApplier
 	{
 		this.sheet.moveColumns(this.sheet.getRange(1, from + 1), to + 1);
 	}
-}
-
-if (typeof module !== 'undefined')
-{
-	module.exports = { ColumnAlignmentApplier };
 }

@@ -15,8 +15,15 @@ class SheetPatcher
 	constructor(sheet)
 	{
 		this.sheet = sheet;
-		this.headers = this.sheet.getRange(1, 1, 1, this.sheet.getLastColumn()).getValues()[0];
-		this.ids = this.sheet.getRange(2, 1, this.sheet.getLastRow() - 1, 1).getValues().map(row => row[0]);
+		const lastRow = this.sheet.getLastRow();
+		const lastCol = this.sheet.getLastColumn();
+		
+		this.headers = (lastRow > 0 && lastCol > 0) 
+			? this.sheet.getRange(1, 1, 1, lastCol).getValues()[0] 
+			: [];
+		this.ids = (lastRow > 1 && lastCol > 0) 
+			? this.sheet.getRange(2, 1, lastRow - 1, 1).getValues().map(row => row[0]) 
+			: [];
 	}
 
 	/**
@@ -243,7 +250,3 @@ class SheetPatcher
 	}
 }
 
-if (typeof module !== 'undefined')
-{
-	module.exports = { SheetPatcher };
-}

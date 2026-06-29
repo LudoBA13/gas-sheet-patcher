@@ -212,7 +212,4 @@ class SeriesPatcher
 	}
 }
 
-if (typeof module !== 'undefined')
-{
-	module.exports = { SeriesPatcher };
-}
+
