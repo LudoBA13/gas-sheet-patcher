@@ -180,6 +180,7 @@ class SeriesPatcher
 	 */
 	_applyInsert(working, index, value, actions)
 	{
+		console.log(`Inserting ${value} at ${index}`);
 		actions.push({
 			type: 'insert',
 			index: index,
@@ -200,6 +201,7 @@ class SeriesPatcher
 	 */
 	_applyMove(working, fromIndex, toIndex, value, actions)
 	{
+		console.log(`Moving ${value} from ${fromIndex} to ${toIndex}`);
 		actions.push({
 			type: 'move',
 			from: fromIndex,
