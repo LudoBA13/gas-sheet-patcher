@@ -1,14 +1,20 @@
-const { MockSheet } = require('./MockSheet');
+const { MockSheet, MockSpreadsheet } = require('./MockSheet');
+const { AlignmentApplier } = require('../src/AlignmentApplier');
+global.AlignmentApplier = AlignmentApplier;
 const { SeriesPatcher } = require('../src/SeriesPatcher');
+global.SeriesPatcher = SeriesPatcher;
 const { RowAlignmentApplier } = require('../src/RowAlignmentApplier');
+global.RowAlignmentApplier = RowAlignmentApplier;
 const { ColumnAlignmentApplier } = require('../src/ColumnAlignmentApplier');
+global.ColumnAlignmentApplier = ColumnAlignmentApplier;
 const { SheetPatcher } = require('../src/SheetPatcher');
 
 // Mock global environment for GAS classes
-global.SeriesPatcher = SeriesPatcher;
-global.RowAlignmentApplier = RowAlignmentApplier;
-global.ColumnAlignmentApplier = ColumnAlignmentApplier;
-global.SpreadsheetApp = { flush: () => {} };
+const mockSpreadsheet = new MockSpreadsheet();
+global.SpreadsheetApp = { 
+	flush: () => {},
+	getActiveSpreadsheet: () => mockSpreadsheet 
+};
 
 /**
  * SheetPatcher Test Suite
@@ -22,6 +28,7 @@ class SheetPatcherTest
 		this.testRowAlignment();
 		this.testColumnAlignment();
 		this.testFullReplace();
+		this.testPatchOrCreate();
 
 		console.log('All SheetPatcher tests passed!');
 	}
@@ -108,6 +115,23 @@ class SheetPatcherTest
 		SheetPatcher.patch(mockSheet, newData);
 
 		this.assertEqual(mockSheet.data, newData, 'Sheet data should match newData after patch');
+	}
+
+	testPatchOrCreate()
+	{
+		const data = [
+			['ID', 'Name'],
+			['1', 'Alpha']
+		];
+		const sheetName = 'NewSheet';
+		
+		SheetPatcher.patchOrCreate(sheetName, data);
+		
+		const sheet = mockSpreadsheet.getSheetByName(sheetName);
+		this.assert(sheet !== null, 'Sheet should be created');
+		this.assertEqual(sheet.data, data, 'Sheet data should match input data');
+		this.assertEqual(sheet.getMaxRows(), data.length, 'Max rows should be resized to fit data');
+		this.assertEqual(sheet.getMaxColumns(), data[0].length, 'Max columns should be resized to fit data');
 	}
 }
 

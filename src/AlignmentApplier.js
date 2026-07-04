@@ -68,4 +68,6 @@ class AlignmentApplier
 	}
 }
 
+module.exports = { AlignmentApplier };
+
 

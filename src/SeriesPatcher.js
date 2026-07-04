@@ -214,4 +214,6 @@ class SeriesPatcher
 	}
 }
 
+module.exports = { SeriesPatcher };
+
 

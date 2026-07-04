@@ -19,3 +19,5 @@ class RowAlignmentApplier extends AlignmentApplier
 		this.sheet.moveRows(this.sheet.getRange(from + 1, 1), to + 1);
 	}
 }
+
+module.exports = { RowAlignmentApplier };

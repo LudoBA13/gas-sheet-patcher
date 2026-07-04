@@ -3,9 +3,20 @@
  */
 class MockSheet
 {
-	constructor(initialData = [[]])
+	constructor(initialData = null, maxRows = 100, maxCols = 20)
 	{
-		this.data = JSON.parse(JSON.stringify(initialData));
+		if (initialData)
+		{
+			this.data = JSON.parse(JSON.stringify(initialData));
+			this.maxRows = initialData.length;
+			this.maxCols = initialData[0].length;
+		}
+		else
+		{
+			this.data = Array.from({ length: maxRows }, () => Array(maxCols).fill(''));
+			this.maxRows = maxRows;
+			this.maxCols = maxCols;
+		}
 	}
 
 	getLastRow()
@@ -18,6 +29,16 @@ class MockSheet
 		return this.data.length > 0 ? this.data[0].length : 0;
 	}
 
+	getMaxRows()
+	{
+		return this.maxRows;
+	}
+
+	getMaxColumns()
+	{
+		return this.maxCols;
+	}
+
 	getRange(row, col, numRows = 1, numCols = 1)
 	{
 		return new MockRange(this, row, col, numRows, numCols);
@@ -27,16 +48,19 @@ class MockSheet
 	{
 		const newRow = new Array(this.getLastColumn()).fill('');
 		this.data.splice(row - 1, 0, newRow);
+		this.maxRows++;
 	}
 
 	deleteRow(row)
 	{
 		this.data.splice(row - 1, 1);
+		this.maxRows--;
 	}
 
 	deleteRows(row, numRows)
 	{
 		this.data.splice(row - 1, numRows);
+		this.maxRows -= numRows;
 	}
 
 	insertColumnBefore(col)
@@ -45,6 +69,7 @@ class MockSheet
 		{
 			row.splice(col - 1, 0, '');
 		}
+		this.maxCols++;
 	}
 
 	deleteColumn(col)
@@ -53,6 +78,7 @@ class MockSheet
 		{
 			row.splice(col - 1, 1);
 		}
+		this.maxCols--;
 	}
 
 	deleteColumns(col, numCols)
@@ -61,6 +87,7 @@ class MockSheet
 		{
 			row.splice(col - 1, numCols);
 		}
+		this.maxCols -= numCols;
 	}
 
 	moveRows(rowSpec, destinationIndex)
@@ -80,6 +107,29 @@ class MockSheet
 			const colsToMove = row.splice(startCol - 1, numCols);
 			row.splice(destinationIndex - 1, 0, ...colsToMove);
 		}
+	}
+}
+
+/**
+ * Test double for Google Apps Script Spreadsheet.
+ */
+class MockSpreadsheet
+{
+	constructor()
+	{
+		this.sheets = {};
+	}
+
+	getSheetByName(name)
+	{
+		return this.sheets[name] || null;
+	}
+
+	insertSheet(name)
+	{
+		const sheet = new MockSheet();
+		this.sheets[name] = sheet;
+		return sheet;
 	}
 }
 
@@ -120,4 +170,4 @@ class MockRange
 	}
 }
 
-module.exports = { MockSheet };
+module.exports = { MockSheet, MockSpreadsheet };

@@ -38,6 +38,36 @@ class SheetPatcher
 	}
 
 	/**
+	 * Patches a sheet if it exists, otherwise creates it.
+	 * @param {string} sheetName The name of the sheet to patch or create.
+	 * @param {any[][]} data The 2D array of data.
+	 * @return {void}
+	 */
+	static patchOrCreate(sheetName, data)
+	{
+		const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+		let sheet = spreadsheet.getSheetByName(sheetName);
+		if (sheet)
+		{
+			SheetPatcher.patch(sheet, data);
+		}
+		else
+		{
+			sheet = spreadsheet.insertSheet(sheetName);
+			// Resize to exactly fit data
+			if (sheet.getMaxRows() > data.length)
+			{
+				sheet.deleteRows(data.length + 1, sheet.getMaxRows() - data.length);
+			}
+			if (sheet.getMaxColumns() > data[0].length)
+			{
+				sheet.deleteColumns(data[0].length + 1, sheet.getMaxColumns() - data[0].length);
+			}
+			sheet.getRange(1, 1, data.length, data[0].length).setValues(data);
+		}
+	}
+
+	/**
 	 * Aligns sheet structure and replaces content with newData.
 	 * @param {any[][]} newData The 2D array of data to apply to the sheet.
 	 * @return {void}
@@ -249,4 +279,6 @@ class SheetPatcher
 		return val1 !== val2;
 	}
 }
+
+module.exports = { SheetPatcher };
 
