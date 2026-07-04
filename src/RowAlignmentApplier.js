@@ -20,4 +20,7 @@ class RowAlignmentApplier extends AlignmentApplier
 	}
 }
 
-module.exports = { RowAlignmentApplier };
+if (typeof module !== 'undefined' && module.exports)
+{
+	module.exports = { RowAlignmentApplier };
+}

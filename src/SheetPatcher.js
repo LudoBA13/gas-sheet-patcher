@@ -280,5 +280,8 @@ class SheetPatcher
 	}
 }
 
-module.exports = { SheetPatcher };
+if (typeof module !== 'undefined' && module.exports)
+{
+	module.exports = { SheetPatcher };
+}
 

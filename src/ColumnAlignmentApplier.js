@@ -23,4 +23,7 @@ class ColumnAlignmentApplier extends AlignmentApplier
 	}
 }
 
-module.exports = { ColumnAlignmentApplier };
+if (typeof module !== 'undefined' && module.exports)
+{
+	module.exports = { ColumnAlignmentApplier };
+}
