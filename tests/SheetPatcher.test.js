@@ -29,6 +29,7 @@ class SheetPatcherTest
 		this.testColumnAlignment();
 		this.testFullReplace();
 		this.testPatchOrCreate();
+		this.testHeaderStyling();
 
 		console.log('All SheetPatcher tests passed!');
 	}
@@ -132,6 +133,16 @@ class SheetPatcherTest
 		this.assertEqual(sheet.data, data, 'Sheet data should match input data');
 		this.assertEqual(sheet.getMaxRows(), data.length, 'Max rows should be resized to fit data');
 		this.assertEqual(sheet.getMaxColumns(), data[0].length, 'Max columns should be resized to fit data');
+	}
+
+	testHeaderStyling()
+	{
+		const data = [['H1', 'H2']];
+		const mockSheet = new MockSheet(data);
+		
+		SheetPatcher.styleHeaderRow(mockSheet);
+		
+		this.assert(true, 'styleHeaderRow should execute without errors');
 	}
 }
 

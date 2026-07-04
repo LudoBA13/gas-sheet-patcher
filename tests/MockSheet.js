@@ -147,6 +147,13 @@ class MockRange
 		this.numCols = numCols;
 	}
 
+	setHorizontalAlignment(alignment) { return this; }
+	setVerticalAlignment(alignment) { return this; }
+	setWrap(wrap) { return this; }
+	setFontWeight(weight) { return this; }
+	setFontColor(color) { return this; }
+	setBackground(color) { return this; }
+
 	getValues()
 	{
 		return this.sheet.data.slice(this.row - 1, this.row - 1 + this.numRows)

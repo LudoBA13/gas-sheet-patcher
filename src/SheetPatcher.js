@@ -64,7 +64,29 @@ class SheetPatcher
 				sheet.deleteColumns(data[0].length + 1, sheet.getMaxColumns() - data[0].length);
 			}
 			sheet.getRange(1, 1, data.length, data[0].length).setValues(data);
+			SheetPatcher.styleHeaderRow(sheet);
 		}
+	}
+
+	/**
+	 * Styles the first row of a sheet as a header.
+	 * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet The sheet to style.
+	 * @return {void}
+	 */
+	static styleHeaderRow(sheet)
+	{
+		const lastColumn = sheet.getLastColumn();
+		if (lastColumn === 0)
+		{
+			return;
+		}
+		const range = sheet.getRange(1, 1, 1, lastColumn);
+		range.setHorizontalAlignment('center');
+		range.setVerticalAlignment('middle');
+		range.setWrap(true);
+		range.setFontWeight('bold');
+		range.setFontColor('#ffffff');
+		range.setBackground('#4A86E8');
 	}
 
 	/**
