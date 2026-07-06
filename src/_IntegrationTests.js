@@ -1,4 +1,19 @@
 /**
+ * Test case: Patching a sheet with an active filter.
+ */
+function testFilter()
+{
+	const ss = SpreadsheetApp.getActiveSpreadsheet();
+	const patchedSheet = ss.getSheetByName('_Patched');
+	const newSheet = ss.getSheetByName('_New');
+	
+	const newData = newSheet.getDataRange().getValues();
+
+	// Patch
+	SheetPatcher.patch(patchedSheet, newData);
+}
+
+/**
  * Main integration test function.
  */
 function test1SheetPatcher()

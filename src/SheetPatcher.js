@@ -101,6 +101,13 @@ class SheetPatcher
 			throw new Error("Invalid Input: newData array is null, empty, or malformed.");
 		}
 
+		// Remove filter if it exists to prevent interference with structural changes
+		const filter = this.sheet.getFilter();
+		if (filter)
+		{
+			filter.remove();
+		}
+
 		// 1. Structural Alignment
 		this._alignRows(newData);
 		const colActions = this._alignColumns(newData[0]);
