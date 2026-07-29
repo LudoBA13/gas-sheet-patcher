@@ -30,8 +30,35 @@ class SheetPatcherTest
 		this.testFullReplace();
 		this.testPatchOrCreate();
 		this.testHeaderStyling();
+		this.testSorting();
 
 		console.log('All SheetPatcher tests passed!');
+	}
+
+	testSorting()
+	{
+		const initialData = [
+			['ID', 'Name'],
+			['1', 'A'],
+			['2', 'B']
+		];
+		const mockSheet = new MockSheet(initialData);
+
+		const newData = [
+			['ID', 'Name'],
+			['2', 'B'],
+			['1', 'A']
+		];
+
+		const expectedData = [
+			['ID', 'Name'],
+			['1', 'A'],
+			['2', 'B']
+		];
+
+		SheetPatcher.patch(mockSheet, newData);
+
+		this.assertEqual(mockSheet.data, expectedData, 'Sheet data should be sorted by ID after patch');
 	}
 
 	assert(condition, message)

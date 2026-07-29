@@ -101,6 +101,21 @@ class SheetPatcher
 			throw new Error("Invalid Input: newData array is null, empty, or malformed.");
 		}
 
+		// Sort newData by ID (first column), keeping the header row at the top.
+		const sortedData = [newData[0], ...newData.slice(1).sort((a, b) =>
+		{
+			if (a[0] < b[0])
+			{
+				return -1;
+			}
+			if (a[0] > b[0])
+			{
+				return 1;
+			}
+			return 0;
+		})];
+		newData = sortedData;
+
 		// Remove filter if it exists to prevent interference with structural changes
 		const filter = this.sheet.getFilter();
 		if (filter)

@@ -19,6 +19,11 @@ class MockSheet
 		}
 	}
 
+	getFilter()
+	{
+		return null;
+	}
+
 	getLastRow()
 	{
 		return this.data.length;
