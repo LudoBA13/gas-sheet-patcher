@@ -249,7 +249,7 @@ class SheetPatcher
 		const existingRows = this.sheet.getRange(1, 1, this.sheet.getLastRow(), 1).getValues().map(r => r[0]);
 		const newRows = newData.map(r => r[0]);
 		
-		const actions = SeriesPatcher.patch(existingRows, newRows);
+		const actions = SortedSeriesPatcher.patch(existingRows, newRows);
 		new RowAlignmentApplier(this.sheet).apply(actions);
 	}
 
