@@ -17,25 +17,28 @@ class AlignmentApplier
 
 	/**
 	 * Applies a sequence of actions from SeriesPatcher.
+	 * Sorts actions so deletions happen in reverse order (highest index first),
+	 * and insertions happen in ascending order.
 	 * @param {object[]} actions List of actions.
 	 * @return {void}
 	 */
 	apply(actions)
 	{
-		for (const action of actions)
+		const deletions = actions.filter(a => a.type === 'delete').sort((a, b) => b.index - a.index);
+		const insertions = actions.filter(a => a.type === 'insert').sort((a, b) => a.index - b.index);
+		const moves = actions.filter(a => a.type === 'move');
+
+		for (const action of deletions)
 		{
-			switch (action.type)
-			{
-				case 'delete':
-					this.delete(action.index);
-					break;
-				case 'insert':
-					this.insert(action.index);
-					break;
-				case 'move':
-					this.move(action.from, action.to);
-					break;
-			}
+			this.delete(action.index);
+		}
+		for (const action of insertions)
+		{
+			this.insert(action.index);
+		}
+		for (const action of moves)
+		{
+			this.move(action.from, action.to);
 		}
 	}
 

@@ -1,3 +1,8 @@
+const { SortedSeriesPatcher } = require('./SortedSeriesPatcher');
+const { SeriesPatcher } = require('./SeriesPatcher');
+const { RowAlignmentApplier } = require('./RowAlignmentApplier');
+const { ColumnAlignmentApplier } = require('./ColumnAlignmentApplier');
+
 /**
  * SheetPatcher Class
  * Handles structural alignment, column recovery, and granular minimal-diff updates.
