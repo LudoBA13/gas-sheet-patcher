@@ -4,5 +4,5 @@
 if git diff --cached --name-only | grep -q "^src/" && git diff --cached --name-only | grep -qvE "/_"; then
     echo "Changes detected in src/. Running bundle..."
     ./scripts/bundle.sh
-    git add dist/bundle.js
+    git add dist/SheetPatcherBundle.js
 fi

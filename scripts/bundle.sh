@@ -3,7 +3,7 @@
 # Configuration
 SOURCE_DIR="src"
 OUTPUT_DIR="dist"
-OUTPUT_FILE="$OUTPUT_DIR/bundle.js"
+OUTPUT_FILE="$OUTPUT_DIR/SheetPatcherBundle.js"
 
 # Ensure output file is clean
 mkdir -p "$OUTPUT_DIR"
