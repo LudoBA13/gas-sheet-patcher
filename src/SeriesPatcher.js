@@ -92,125 +92,109 @@ class SeriesPatcher
 		const actions = [];
 		const working = [...source];
 
-		this._addDeletions(working, target, actions);
-		this._addInsertionsAndMoves(working, target, actions);
+		// 1. Calculate Deletions
+		const deletions = this._calculateDeletions(working, target);
+		actions.push(...deletions);
+		deletions.forEach(a => working.splice(a.index, 1));
+
+		// 2. Calculate Insertions
+		const insertions = this._calculateInsertions(working, target);
+		actions.push(...insertions);
+		insertions.forEach(a => working.splice(a.index, 0, a.value));
+
+		// 3. Calculate Moves
+		const moves = this._calculateMoves(working, target);
+		actions.push(...moves);
 
 		return actions;
 	}
 
 	/**
-	 * Identifies elements in working that are not in target and adds delete actions.
-	 * @param {any[]} working The current state of the array during transformation.
+	 * Identifies elements in working that are not in target.
+	 * @param {any[]} working The current state of the array.
 	 * @param {any[]} target The target array.
-	 * @param {object[]} actions The list of actions to append to.
+	 * @return {object[]} Deletion actions.
 	 * @private
 	 */
-	_addDeletions(working, target, actions)
+	_calculateDeletions(working, target)
 	{
 		const targetSet = new Set(target);
-
+		const actions = [];
+		// Deleting in reverse order to keep indices valid during calculation
 		for (let i = working.length - 1; i >= 0; i--)
 		{
-			if (targetSet.has(working[i]))
+			if (!targetSet.has(working[i]))
 			{
-				continue;
+				actions.push({
+					type: 'delete',
+					index: i,
+					value: working[i]
+				});
 			}
-
-			actions.push({
-				type: 'delete',
-				index: i,
-				value: working[i]
-			});
-
-			working.splice(i, 1);
 		}
+		// Sort by index descending to match desired application order (reverse index order)
+		return actions.sort((a, b) => b.index - a.index);
 	}
 
 	/**
-	 * Iterates through target to ensure working matches via insertions or moves.
+	 * Identifies elements in target that are not in working.
 	 * @param {any[]} working The current state of the array.
 	 * @param {any[]} target The target array.
-	 * @param {object[]} actions The list of actions to append to.
+	 * @return {object[]} Insertion actions.
 	 * @private
 	 */
-	_addInsertionsAndMoves(working, target, actions)
+	_calculateInsertions(working, target)
 	{
+		const workingSet = new Set(working);
+		const actions = [];
+		for (let i = 0; i < target.length; i++)
+		{
+			if (!workingSet.has(target[i]))
+			{
+				actions.push({
+					type: 'insert',
+					index: i,
+					value: target[i]
+				});
+			}
+		}
+		// Insertions in forward order
+		return actions.sort((a, b) => a.index - b.index);
+	}
+
+	/**
+	 * Calculates move actions once working and target have the same elements.
+	 * @param {any[]} working The current state of the array.
+	 * @param {any[]} target The target array.
+	 * @return {object[]} Move actions.
+	 * @private
+	 */
+	_calculateMoves(working, target)
+	{
+		const actions = [];
+		const current = [...working];
+
 		for (let i = 0; i < target.length; i++)
 		{
 			const expected = target[i];
-
-			if (working[i] === expected)
+			if (current[i] === expected)
 			{
 				continue;
 			}
 
-			this._syncElement(working, target, i, actions);
+			const currentIndex = current.indexOf(expected);
+			// Apply move
+			actions.push({
+				type: 'move',
+				from: currentIndex,
+				to: i,
+				value: expected
+			});
+
+			current.splice(currentIndex, 1);
+			current.splice(i, 0, expected);
 		}
-	}
-
-	/**
-	 * Synchronizes a single element at the specified index.
-	 * @param {any[]} working The current state of the array.
-	 * @param {any[]} target The target array.
-	 * @param {number} index The index to synchronize.
-	 * @param {object[]} actions The list of actions to append to.
-	 * @private
-	 */
-	_syncElement(working, target, index, actions)
-	{
-		const expected = target[index];
-		const currentIndex = working.indexOf(expected);
-
-		if (currentIndex === -1)
-		{
-			this._applyInsert(working, index, expected, actions);
-			return;
-		}
-
-		this._applyMove(working, currentIndex, index, expected, actions);
-	}
-
-	/**
-	 * Applies an insert action to working and logs it.
-	 * @param {any[]} working The current state of the array.
-	 * @param {number} index The index to insert at.
-	 * @param {any} value The value to insert.
-	 * @param {object[]} actions The list of actions to append to.
-	 * @private
-	 */
-	_applyInsert(working, index, value, actions)
-	{
-		console.log(`Inserting ${value} at ${index}`);
-		actions.push({
-			type: 'insert',
-			index: index,
-			value: value
-		});
-
-		working.splice(index, 0, value);
-	}
-
-	/**
-	 * Applies a move action to working and logs it.
-	 * @param {any[]} working The current state of the array.
-	 * @param {number} fromIndex The current index of the element.
-	 * @param {number} toIndex The target index for the element.
-	 * @param {any} value The value being moved.
-	 * @param {object[]} actions The list of actions to append to.
-	 * @private
-	 */
-	_applyMove(working, fromIndex, toIndex, value, actions)
-	{
-		console.log(`Moving ${value} from ${fromIndex} to ${toIndex}`);
-		actions.push({
-			type: 'move',
-			from: fromIndex,
-			to: toIndex,
-			value: value
-		});
-
-		working.splice(fromIndex, 1);
-		working.splice(toIndex, 0, value);
+		return actions;
 	}
 }
 
@@ -218,5 +202,3 @@ if (typeof module !== 'undefined' && module.exports)
 {
 	module.exports = { SeriesPatcher };
 }
-
-
