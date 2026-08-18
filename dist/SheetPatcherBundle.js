@@ -81,10 +81,361 @@ if (typeof module !== 'undefined' && module.exports)
 
 
 
-const { SortedSeriesPatcher } = require('./SortedSeriesPatcher');
-const { SeriesPatcher } = require('./SeriesPatcher');
-const { RowAlignmentApplier } = require('./RowAlignmentApplier');
-const { ColumnAlignmentApplier } = require('./ColumnAlignmentApplier');
+/**
+ * SeriesPatcher Class
+ * Generates a sequence of actions to transform one array of unique values into another.
+ */
+class SeriesPatcher
+{
+	/**
+	 * Static helper to get actions without manual instantiation.
+	 * @param {any[]} source The starting array.
+	 * @param {any[]} target The target array.
+	 * @return {object[]} List of actions.
+	 */
+	static patch(source, target)
+	{
+		return (new SeriesPatcher).getActions(source, target);
+	}
+
+	/**
+	 * Calculates the actions required to transform source into target.
+	 * @param {any[]} source The starting array.
+	 * @param {any[]} target The target array.
+	 * @return {object[]} List of actions.
+	 */
+	getActions(source, target)
+	{
+		if (this._isIdentical(source, target))
+		{
+			return [];
+		}
+
+		this._ensureUnique(source);
+		this._ensureUnique(target);
+
+		return this._calculateActions(source, target);
+	}
+
+	/**
+	 * Checks if two arrays are identical in content and order.
+	 * @param {any[]} a First array.
+	 * @param {any[]} b Second array.
+	 * @return {boolean} True if identical.
+	 * @private
+	 */
+	_isIdentical(a, b)
+	{
+		if (a.length !== b.length)
+		{
+			return false;
+		}
+
+		for (let i = 0; i < a.length; i++)
+		{
+			if (a[i] !== b[i])
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Validates that all elements in the array are unique.
+	 * @param {any[]} array The array to check.
+	 * @throws {Error} If duplicates are found.
+	 * @private
+	 */
+	_ensureUnique(array)
+	{
+		const seen = new Set;
+
+		for (const item of array)
+		{
+			if (seen.has(item))
+			{
+				throw new Error('Array values must be unique.');
+			}
+
+			seen.add(item);
+		}
+	}
+
+	/**
+	 * Orchestrates the calculation of deletions, insertions, and moves.
+	 * @param {any[]} source The starting array.
+	 * @param {any[]} target The target array.
+	 * @return {object[]} List of actions.
+	 * @private
+	 */
+	_calculateActions(source, target)
+	{
+		const actions = [];
+		const working = [...source];
+
+		this._addDeletions(working, target, actions);
+		this._addInsertionsAndMoves(working, target, actions);
+
+		return actions;
+	}
+
+	/**
+	 * Identifies elements in working that are not in target and adds delete actions.
+	 * @param {any[]} working The current state of the array during transformation.
+	 * @param {any[]} target The target array.
+	 * @param {object[]} actions The list of actions to append to.
+	 * @private
+	 */
+	_addDeletions(working, target, actions)
+	{
+		const targetSet = new Set(target);
+
+		for (let i = working.length - 1; i >= 0; i--)
+		{
+			if (targetSet.has(working[i]))
+			{
+				continue;
+			}
+
+			actions.push({
+				type: 'delete',
+				index: i,
+				value: working[i]
+			});
+
+			working.splice(i, 1);
+		}
+	}
+
+	/**
+	 * Iterates through target to ensure working matches via insertions or moves.
+	 * @param {any[]} working The current state of the array.
+	 * @param {any[]} target The target array.
+	 * @param {object[]} actions The list of actions to append to.
+	 * @private
+	 */
+	_addInsertionsAndMoves(working, target, actions)
+	{
+		for (let i = 0; i < target.length; i++)
+		{
+			const expected = target[i];
+
+			if (working[i] === expected)
+			{
+				continue;
+			}
+
+			this._syncElement(working, target, i, actions);
+		}
+	}
+
+	/**
+	 * Synchronizes a single element at the specified index.
+	 * @param {any[]} working The current state of the array.
+	 * @param {any[]} target The target array.
+	 * @param {number} index The index to synchronize.
+	 * @param {object[]} actions The list of actions to append to.
+	 * @private
+	 */
+	_syncElement(working, target, index, actions)
+	{
+		const expected = target[index];
+		const currentIndex = working.indexOf(expected);
+
+		if (currentIndex === -1)
+		{
+			this._applyInsert(working, index, expected, actions);
+			return;
+		}
+
+		this._applyMove(working, currentIndex, index, expected, actions);
+	}
+
+	/**
+	 * Applies an insert action to working and logs it.
+	 * @param {any[]} working The current state of the array.
+	 * @param {number} index The index to insert at.
+	 * @param {any} value The value to insert.
+	 * @param {object[]} actions The list of actions to append to.
+	 * @private
+	 */
+	_applyInsert(working, index, value, actions)
+	{
+		console.log(`Inserting ${value} at ${index}`);
+		actions.push({
+			type: 'insert',
+			index: index,
+			value: value
+		});
+
+		working.splice(index, 0, value);
+	}
+
+	/**
+	 * Applies a move action to working and logs it.
+	 * @param {any[]} working The current state of the array.
+	 * @param {number} fromIndex The current index of the element.
+	 * @param {number} toIndex The target index for the element.
+	 * @param {any} value The value being moved.
+	 * @param {object[]} actions The list of actions to append to.
+	 * @private
+	 */
+	_applyMove(working, fromIndex, toIndex, value, actions)
+	{
+		console.log(`Moving ${value} from ${fromIndex} to ${toIndex}`);
+		actions.push({
+			type: 'move',
+			from: fromIndex,
+			to: toIndex,
+			value: value
+		});
+
+		working.splice(fromIndex, 1);
+		working.splice(toIndex, 0, value);
+	}
+}
+
+if (typeof module !== 'undefined' && module.exports)
+{
+	module.exports = { SeriesPatcher };
+}
+
+
+
+
+/**
+ * SortedSeriesPatcher Class
+ * Optimized for sorted arrays, providing linear-time patching.
+ */
+class SortedSeriesPatcher
+{
+	/**
+	 * @param {any[]} source The starting sorted array.
+	 * @param {any[]} target The target sorted array.
+	 * @return {object[]} List of actions.
+	 */
+	static patch(source, target)
+	{
+		const actions = [];
+		const working = [...source];
+		let s = 0;
+		let t = 0;
+
+		while (t < target.length)
+		{
+			if (s < working.length && working[s] === target[t])
+			{
+				s++;
+				t++;
+			}
+			else if (s < working.length && working[s] < target[t])
+			{
+				// working[s] is not in target, delete it
+				actions.push({
+					type: 'delete',
+					index: s,
+					value: working[s]
+				});
+				working.splice(s, 1);
+			}
+			else
+			{
+				// target[t] is missing in working, insert it
+				actions.push({
+					type: 'insert',
+					index: t,
+					value: target[t]
+				});
+				working.splice(t, 0, target[t]);
+				s++;
+				t++;
+			}
+		}
+
+		// Delete remaining elements in working
+		while (s < working.length)
+		{
+			actions.push({
+				type: 'delete',
+				index: s,
+				value: working[s]
+			});
+			working.splice(s, 1);
+		}
+
+		return actions;
+	}
+}
+
+if (typeof module !== 'undefined' && module.exports)
+{
+	module.exports = { SortedSeriesPatcher };
+}
+
+
+
+
+/**
+ * Concrete implementation for applying actions to rows.
+ */
+class RowAlignmentApplier extends AlignmentApplier
+{
+	delete(index)
+	{
+		this.sheet.deleteRow(index + 1);
+	}
+
+	insert(index)
+	{
+		this.sheet.insertRowBefore(index + 1);
+	}
+
+	move(from, to)
+	{
+		this.sheet.moveRows(this.sheet.getRange(from + 1, 1), to + 1);
+	}
+}
+
+if (typeof module !== 'undefined' && module.exports)
+{
+	module.exports = { RowAlignmentApplier };
+}
+
+
+
+
+/**
+ * Concrete implementation for applying actions to columns.
+ */
+class ColumnAlignmentApplier extends AlignmentApplier
+{
+	delete(index)
+	{
+		console.log('ColumnAlignmentApplier: delete at ' + index);
+		this.sheet.deleteColumn(index + 1);
+	}
+
+	insert(index)
+	{
+		console.log('ColumnAlignmentApplier: insert at ' + index);
+		this.sheet.insertColumnBefore(index + 1);
+	}
+
+	move(from, to)
+	{
+		console.log('ColumnAlignmentApplier: move from ' + from + ' to ' + to);
+		this.sheet.moveColumns(this.sheet.getRange(1, from + 1), to + 1);
+	}
+}
+
+if (typeof module !== 'undefined' && module.exports)
+{
+	module.exports = { ColumnAlignmentApplier };
+}
+
+
 
 /**
  * SheetPatcher Class
@@ -417,362 +768,5 @@ if (typeof module !== 'undefined' && module.exports)
 	module.exports = { SheetPatcher };
 }
 
-
-
-/**
- * SortedSeriesPatcher Class
- * Optimized for sorted arrays, providing linear-time patching.
- */
-class SortedSeriesPatcher
-{
-	/**
-	 * @param {any[]} source The starting sorted array.
-	 * @param {any[]} target The target sorted array.
-	 * @return {object[]} List of actions.
-	 */
-	static patch(source, target)
-	{
-		const actions = [];
-		const working = [...source];
-		let s = 0;
-		let t = 0;
-
-		while (t < target.length)
-		{
-			if (s < working.length && working[s] === target[t])
-			{
-				s++;
-				t++;
-			}
-			else if (s < working.length && working[s] < target[t])
-			{
-				// working[s] is not in target, delete it
-				actions.push({
-					type: 'delete',
-					index: s,
-					value: working[s]
-				});
-				working.splice(s, 1);
-			}
-			else
-			{
-				// target[t] is missing in working, insert it
-				actions.push({
-					type: 'insert',
-					index: t,
-					value: target[t]
-				});
-				working.splice(t, 0, target[t]);
-				s++;
-				t++;
-			}
-		}
-
-		// Delete remaining elements in working
-		while (s < working.length)
-		{
-			actions.push({
-				type: 'delete',
-				index: s,
-				value: working[s]
-			});
-			working.splice(s, 1);
-		}
-
-		return actions;
-	}
-}
-
-if (typeof module !== 'undefined' && module.exports)
-{
-	module.exports = { SortedSeriesPatcher };
-}
-
-
-
-const { AlignmentApplier } = require('./AlignmentApplier');
-
-/**
- * Concrete implementation for applying actions to rows.
- */
-class RowAlignmentApplier extends AlignmentApplier
-{
-	delete(index)
-	{
-		this.sheet.deleteRow(index + 1);
-	}
-
-	insert(index)
-	{
-		this.sheet.insertRowBefore(index + 1);
-	}
-
-	move(from, to)
-	{
-		this.sheet.moveRows(this.sheet.getRange(from + 1, 1), to + 1);
-	}
-}
-
-if (typeof module !== 'undefined' && module.exports)
-{
-	module.exports = { RowAlignmentApplier };
-}
-
-
-/**
- * SeriesPatcher Class
- * Generates a sequence of actions to transform one array of unique values into another.
- */
-class SeriesPatcher
-{
-	/**
-	 * Static helper to get actions without manual instantiation.
-	 * @param {any[]} source The starting array.
-	 * @param {any[]} target The target array.
-	 * @return {object[]} List of actions.
-	 */
-	static patch(source, target)
-	{
-		return (new SeriesPatcher).getActions(source, target);
-	}
-
-	/**
-	 * Calculates the actions required to transform source into target.
-	 * @param {any[]} source The starting array.
-	 * @param {any[]} target The target array.
-	 * @return {object[]} List of actions.
-	 */
-	getActions(source, target)
-	{
-		if (this._isIdentical(source, target))
-		{
-			return [];
-		}
-
-		this._ensureUnique(source);
-		this._ensureUnique(target);
-
-		return this._calculateActions(source, target);
-	}
-
-	/**
-	 * Checks if two arrays are identical in content and order.
-	 * @param {any[]} a First array.
-	 * @param {any[]} b Second array.
-	 * @return {boolean} True if identical.
-	 * @private
-	 */
-	_isIdentical(a, b)
-	{
-		if (a.length !== b.length)
-		{
-			return false;
-		}
-
-		for (let i = 0; i < a.length; i++)
-		{
-			if (a[i] !== b[i])
-			{
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	/**
-	 * Validates that all elements in the array are unique.
-	 * @param {any[]} array The array to check.
-	 * @throws {Error} If duplicates are found.
-	 * @private
-	 */
-	_ensureUnique(array)
-	{
-		const seen = new Set;
-
-		for (const item of array)
-		{
-			if (seen.has(item))
-			{
-				throw new Error('Array values must be unique.');
-			}
-
-			seen.add(item);
-		}
-	}
-
-	/**
-	 * Orchestrates the calculation of deletions, insertions, and moves.
-	 * @param {any[]} source The starting array.
-	 * @param {any[]} target The target array.
-	 * @return {object[]} List of actions.
-	 * @private
-	 */
-	_calculateActions(source, target)
-	{
-		const actions = [];
-		const working = [...source];
-
-		this._addDeletions(working, target, actions);
-		this._addInsertionsAndMoves(working, target, actions);
-
-		return actions;
-	}
-
-	/**
-	 * Identifies elements in working that are not in target and adds delete actions.
-	 * @param {any[]} working The current state of the array during transformation.
-	 * @param {any[]} target The target array.
-	 * @param {object[]} actions The list of actions to append to.
-	 * @private
-	 */
-	_addDeletions(working, target, actions)
-	{
-		const targetSet = new Set(target);
-
-		for (let i = working.length - 1; i >= 0; i--)
-		{
-			if (targetSet.has(working[i]))
-			{
-				continue;
-			}
-
-			actions.push({
-				type: 'delete',
-				index: i,
-				value: working[i]
-			});
-
-			working.splice(i, 1);
-		}
-	}
-
-	/**
-	 * Iterates through target to ensure working matches via insertions or moves.
-	 * @param {any[]} working The current state of the array.
-	 * @param {any[]} target The target array.
-	 * @param {object[]} actions The list of actions to append to.
-	 * @private
-	 */
-	_addInsertionsAndMoves(working, target, actions)
-	{
-		for (let i = 0; i < target.length; i++)
-		{
-			const expected = target[i];
-
-			if (working[i] === expected)
-			{
-				continue;
-			}
-
-			this._syncElement(working, target, i, actions);
-		}
-	}
-
-	/**
-	 * Synchronizes a single element at the specified index.
-	 * @param {any[]} working The current state of the array.
-	 * @param {any[]} target The target array.
-	 * @param {number} index The index to synchronize.
-	 * @param {object[]} actions The list of actions to append to.
-	 * @private
-	 */
-	_syncElement(working, target, index, actions)
-	{
-		const expected = target[index];
-		const currentIndex = working.indexOf(expected);
-
-		if (currentIndex === -1)
-		{
-			this._applyInsert(working, index, expected, actions);
-			return;
-		}
-
-		this._applyMove(working, currentIndex, index, expected, actions);
-	}
-
-	/**
-	 * Applies an insert action to working and logs it.
-	 * @param {any[]} working The current state of the array.
-	 * @param {number} index The index to insert at.
-	 * @param {any} value The value to insert.
-	 * @param {object[]} actions The list of actions to append to.
-	 * @private
-	 */
-	_applyInsert(working, index, value, actions)
-	{
-		console.log(`Inserting ${value} at ${index}`);
-		actions.push({
-			type: 'insert',
-			index: index,
-			value: value
-		});
-
-		working.splice(index, 0, value);
-	}
-
-	/**
-	 * Applies a move action to working and logs it.
-	 * @param {any[]} working The current state of the array.
-	 * @param {number} fromIndex The current index of the element.
-	 * @param {number} toIndex The target index for the element.
-	 * @param {any} value The value being moved.
-	 * @param {object[]} actions The list of actions to append to.
-	 * @private
-	 */
-	_applyMove(working, fromIndex, toIndex, value, actions)
-	{
-		console.log(`Moving ${value} from ${fromIndex} to ${toIndex}`);
-		actions.push({
-			type: 'move',
-			from: fromIndex,
-			to: toIndex,
-			value: value
-		});
-
-		working.splice(fromIndex, 1);
-		working.splice(toIndex, 0, value);
-	}
-}
-
-if (typeof module !== 'undefined' && module.exports)
-{
-	module.exports = { SeriesPatcher };
-}
-
-
-
-
-
-const { AlignmentApplier } = require('./AlignmentApplier');
-
-/**
- * Concrete implementation for applying actions to columns.
- */
-class ColumnAlignmentApplier extends AlignmentApplier
-{
-	delete(index)
-	{
-		console.log('ColumnAlignmentApplier: delete at ' + index);
-		this.sheet.deleteColumn(index + 1);
-	}
-
-	insert(index)
-	{
-		console.log('ColumnAlignmentApplier: insert at ' + index);
-		this.sheet.insertColumnBefore(index + 1);
-	}
-
-	move(from, to)
-	{
-		console.log('ColumnAlignmentApplier: move from ' + from + ' to ' + to);
-		this.sheet.moveColumns(this.sheet.getRange(1, from + 1), to + 1);
-	}
-}
-
-if (typeof module !== 'undefined' && module.exports)
-{
-	module.exports = { ColumnAlignmentApplier };
-}
 
 

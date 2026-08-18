@@ -1,7 +1,3 @@
-const { SortedSeriesPatcher } = require('./SortedSeriesPatcher');
-const { SeriesPatcher } = require('./SeriesPatcher');
-const { RowAlignmentApplier } = require('./RowAlignmentApplier');
-const { ColumnAlignmentApplier } = require('./ColumnAlignmentApplier');
 
 /**
  * SheetPatcher Class

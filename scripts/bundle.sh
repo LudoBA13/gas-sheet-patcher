@@ -10,8 +10,18 @@ mkdir -p "$OUTPUT_DIR"
 echo "// Auto-generated file. Do not edit directly." > "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# Find all .js files in src/ that do not start with '_'
-find "$SOURCE_DIR" -maxdepth 1 -name "*.js" ! -name "_*" -type f | while read -r file; do
+# Files in dependency order
+FILES=(
+    "src/AlignmentApplier.js"
+    "src/SeriesPatcher.js"
+    "src/SortedSeriesPatcher.js"
+    "src/RowAlignmentApplier.js"
+    "src/ColumnAlignmentApplier.js"
+    "src/SheetPatcher.js"
+)
+
+# Append files in order
+for file in "${FILES[@]}"; do
     echo "Appending $file..."
     cat "$file" >> "$OUTPUT_FILE"
     echo -e "\n" >> "$OUTPUT_FILE"

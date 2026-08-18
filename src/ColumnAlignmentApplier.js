@@ -1,5 +1,4 @@
 
-const { AlignmentApplier } = require('./AlignmentApplier');
 
 /**
  * Concrete implementation for applying actions to columns.
