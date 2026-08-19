@@ -1,71 +1,16 @@
 /**
  * SeriesPatcher Class
- * Generates a sequence of actions to transform one array of unique values into another.
+ * Generates specific actions to transform one array of unique values into another, phase-by-phase.
  */
 class SeriesPatcher
 {
-	/**
-	 * Static helper to get actions without manual instantiation.
-	 * @param {any[]} source The starting array.
-	 * @param {any[]} target The target array.
-	 * @return {object[]} List of actions.
-	 */
-	static patch(source, target)
-	{
-		return (new SeriesPatcher).getActions(source, target);
-	}
-
-	/**
-	 * Calculates the actions required to transform source into target.
-	 * @param {any[]} source The starting array.
-	 * @param {any[]} target The target array.
-	 * @return {object[]} List of actions.
-	 */
-	getActions(source, target)
-	{
-		if (this._isIdentical(source, target))
-		{
-			return [];
-		}
-
-		this._ensureUnique(source);
-		this._ensureUnique(target);
-
-		return this._calculateActions(source, target);
-	}
-
-	/**
-	 * Checks if two arrays are identical in content and order.
-	 * @param {any[]} a First array.
-	 * @param {any[]} b Second array.
-	 * @return {boolean} True if identical.
-	 * @private
-	 */
-	_isIdentical(a, b)
-	{
-		if (a.length !== b.length)
-		{
-			return false;
-		}
-
-		for (let i = 0; i < a.length; i++)
-		{
-			if (a[i] !== b[i])
-			{
-				return false;
-			}
-		}
-
-		return true;
-	}
-
 	/**
 	 * Validates that all elements in the array are unique.
 	 * @param {any[]} array The array to check.
 	 * @throws {Error} If duplicates are found.
 	 * @private
 	 */
-	_ensureUnique(array)
+	static _ensureUnique(array)
 	{
 		const seen = new Set;
 
@@ -81,54 +26,27 @@ class SeriesPatcher
 	}
 
 	/**
-	 * Orchestrates the calculation of deletions, insertions, and moves.
-	 * @param {any[]} source The starting array.
-	 * @param {any[]} target The target array.
-	 * @return {object[]} List of actions.
-	 * @private
-	 */
-	_calculateActions(source, target)
-	{
-		const actions = [];
-		const working = [...source];
-
-		// 1. Calculate Deletions
-		const deletions = this._calculateDeletions(working, target);
-		actions.push(...deletions);
-		deletions.forEach(a => working.splice(a.index, 1));
-
-		// 2. Calculate Insertions
-		const insertions = this._calculateInsertions(working, target);
-		actions.push(...insertions);
-		insertions.forEach(a => working.splice(a.index, 0, a.value));
-
-		// 3. Calculate Moves
-		const moves = this._calculateMoves(working, target);
-		actions.push(...moves);
-
-		return actions;
-	}
-
-	/**
-	 * Identifies elements in working that are not in target.
-	 * @param {any[]} working The current state of the array.
-	 * @param {any[]} target The target array.
+	 * Identifies elements in source that are not in target.
+	 * @param {any[]} source 
+	 * @param {any[]} target 
 	 * @return {object[]} Deletion actions.
-	 * @private
 	 */
-	_calculateDeletions(working, target)
+	static generateDeletions(source, target)
 	{
+		this._ensureUnique(source);
+		this._ensureUnique(target);
+
 		const targetSet = new Set(target);
 		const actions = [];
 		// Deleting in reverse order to keep indices valid during calculation
-		for (let i = working.length - 1; i >= 0; i--)
+		for (let i = source.length - 1; i >= 0; i--)
 		{
-			if (!targetSet.has(working[i]))
+			if (!targetSet.has(source[i]))
 			{
 				actions.push({
 					type: 'delete',
 					index: i,
-					value: working[i]
+					value: source[i]
 				});
 			}
 		}
@@ -137,19 +55,21 @@ class SeriesPatcher
 	}
 
 	/**
-	 * Identifies elements in target that are not in working.
-	 * @param {any[]} working The current state of the array.
-	 * @param {any[]} target The target array.
+	 * Identifies elements in target that are not in source.
+	 * @param {any[]} source 
+	 * @param {any[]} target 
 	 * @return {object[]} Insertion actions.
-	 * @private
 	 */
-	_calculateInsertions(working, target)
+	static generateInsertions(source, target)
 	{
-		const workingSet = new Set(working);
+		this._ensureUnique(source);
+		this._ensureUnique(target);
+
+		const sourceSet = new Set(source);
 		const actions = [];
 		for (let i = 0; i < target.length; i++)
 		{
-			if (!workingSet.has(target[i]))
+			if (!sourceSet.has(target[i]))
 			{
 				actions.push({
 					type: 'insert',
@@ -163,16 +83,18 @@ class SeriesPatcher
 	}
 
 	/**
-	 * Calculates move actions once working and target have the same elements.
-	 * @param {any[]} working The current state of the array.
-	 * @param {any[]} target The target array.
+	 * Calculates move actions once source and target have the same elements.
+	 * @param {any[]} source 
+	 * @param {any[]} target 
 	 * @return {object[]} Move actions.
-	 * @private
 	 */
-	_calculateMoves(working, target)
+	static generateMoves(source, target)
 	{
+		this._ensureUnique(source);
+		this._ensureUnique(target);
+
 		const actions = [];
-		const current = [...working];
+		const current = [...source];
 
 		for (let i = 0; i < target.length; i++)
 		{

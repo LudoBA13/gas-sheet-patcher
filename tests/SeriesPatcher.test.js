@@ -8,13 +8,12 @@ class SeriesPatcherTest
 	 */
 	run()
 	{
-		console.log('Running expanded SeriesPatcher tests with action inspection...');
+		console.log('Running sequential SeriesPatcher tests...');
 		
 		this.testIdentical();
-		this.testPureDeletions();
-		this.testPureInsertions();
-		this.testReorderOnly();
-		this.testInsertAndDelete();
+		this.testDeletions();
+		this.testInsertions();
+		this.testMoves();
 		this.testComplexMix();
 		this.testDuplicatesThrow();
 		
@@ -36,18 +35,26 @@ class SeriesPatcherTest
 		this.assert(strA === strB, `${message}\nExpected: ${strB}\nGot:      ${strA}`);
 	}
 
-	applyActions(source, actions)
+	/**
+	 * Sequential application of actions to simulate the new process.
+	 */
+	applySequential(source, target)
 	{
-		const working = [...source];
-		const deletions = actions.filter(a => a.type === 'delete').sort((a, b) => b.index - a.index);
-		const insertions = actions.filter(a => a.type === 'insert').sort((a, b) => a.index - b.index);
-		const moves = actions.filter(a => a.type === 'move');
+		let working = [...source];
 
-		for (const action of deletions) working.splice(action.index, 1);
-		for (const action of insertions) working.splice(action.index, 0, action.value);
-		for (const action of moves) {
-			working.splice(action.from, 1);
-			working.splice(action.to, 0, action.value);
+		// 1. Deletions
+		const delActions = SeriesPatcher.generateDeletions(working, target);
+		for (const a of delActions) working.splice(a.index, 1);
+
+		// 2. Insertions
+		const insActions = SeriesPatcher.generateInsertions(working, target);
+		for (const a of insActions) working.splice(a.index, 0, a.value);
+
+		// 3. Moves
+		const moveActions = SeriesPatcher.generateMoves(working, target);
+		for (const a of moveActions) {
+			working.splice(a.from, 1);
+			working.splice(a.to, 0, a.value);
 		}
 		
 		return working;
@@ -57,12 +64,13 @@ class SeriesPatcherTest
 	{
 		const source = [1, 2, 3];
 		const target = [1, 2, 3];
-		const actions = SeriesPatcher.patch(source, target);
 		
-		this.assertEqual(actions, [], 'Identical arrays should produce no actions');
+		this.assertEqual(SeriesPatcher.generateDeletions(source, target), [], 'Identical Deletions');
+		this.assertEqual(SeriesPatcher.generateInsertions(source, target), [], 'Identical Insertions');
+		this.assertEqual(SeriesPatcher.generateMoves(source, target), [], 'Identical Moves');
 	}
 
-	testPureDeletions()
+	testDeletions()
 	{
 		const source = ['A', 'B', 'C', 'D'];
 		const target = ['A', 'C'];
@@ -70,13 +78,11 @@ class SeriesPatcherTest
 			{ type: 'delete', index: 3, value: 'D' },
 			{ type: 'delete', index: 1, value: 'B' }
 		];
-		const actions = SeriesPatcher.patch(source, target);
 		
-		this.assertEqual(actions, expectedActions, 'Pure deletions');
-		this.assertEqual(this.applyActions(source, actions), target, 'Apply pure deletions');
+		this.assertEqual(SeriesPatcher.generateDeletions(source, target), expectedActions, 'Deletions');
 	}
 
-	testPureInsertions()
+	testInsertions()
 	{
 		const source = ['A', 'C'];
 		const target = ['A', 'B', 'C', 'D'];
@@ -84,13 +90,11 @@ class SeriesPatcherTest
 			{ type: 'insert', index: 1, value: 'B' },
 			{ type: 'insert', index: 3, value: 'D' }
 		];
-		const actions = SeriesPatcher.patch(source, target);
 		
-		this.assertEqual(actions, expectedActions, 'Pure insertions');
-		this.assertEqual(this.applyActions(source, actions), target, 'Apply pure insertions');
+		this.assertEqual(SeriesPatcher.generateInsertions(source, target), expectedActions, 'Insertions');
 	}
 
-	testReorderOnly()
+	testMoves()
 	{
 		const source = ['A', 'B', 'C'];
 		const target = ['C', 'B', 'A'];
@@ -98,43 +102,23 @@ class SeriesPatcherTest
 			{ type: 'move', from: 2, to: 0, value: 'C' },
 			{ type: 'move', from: 2, to: 1, value: 'B' }
 		];
-		const actions = SeriesPatcher.patch(source, target);
 		
-		this.assertEqual(actions, expectedActions, 'Reorder only');
-		this.assertEqual(this.applyActions(source, actions), target, 'Apply reorder');
-	}
-
-	testInsertAndDelete()
-	{
-		const source = ['A', 'B'];
-		const target = ['B', 'C'];
-		const expectedActions = [
-			{ type: 'delete', index: 0, value: 'A' },
-			{ type: 'insert', index: 1, value: 'C' }
-		];
-		const actions = SeriesPatcher.patch(source, target);
-		
-		this.assertEqual(actions, expectedActions, 'Simple mix');
-		this.assertEqual(this.applyActions(source, actions), target, 'Apply simple mix');
+		this.assertEqual(SeriesPatcher.generateMoves(source, target), expectedActions, 'Moves');
 	}
 
 	testComplexMix()
 	{
 		const source = ['A', 'B', 'C', 'D'];
 		const target = ['D', 'X', 'B', 'A'];
-		const actions = SeriesPatcher.patch(source, target);
 		
-		const expectedActions = [{"type":"delete","index":2,"value":"C"},{"type":"insert","index":1,"value":"X"},{"type":"move","from":3,"to":0,"value":"D"},{"type":"move","from":2,"to":1,"value":"X"},{"type":"move","from":3,"to":2,"value":"B"}];
-		
-		this.assertEqual(actions, expectedActions, 'Complex mix actions');
-		this.assertEqual(this.applyActions(source, actions), target, 'Apply complex mix');
+		this.assertEqual(this.applySequential(source, target), target, 'Apply sequential complex mix');
 	}
 
 	testDuplicatesThrow()
 	{
 		try
 		{
-			SeriesPatcher.patch([1, 1], [2]);
+			SeriesPatcher.generateDeletions([1, 1], [2]);
 			this.assert(false, 'Should throw error on duplicate source');
 		}
 		catch (e)

@@ -18,31 +18,36 @@ class AlignmentApplier
 	}
 
 	/**
-	 * Applies a sequence of actions from SeriesPatcher.
-	 * Strict order: delete (reverse index), insert (forward index), move (target order).
-	 * @param {object[]} actions List of actions.
-	 * @return {void}
+	 * Apply deletion actions.
+	 * @param {object[]} actions List of delete actions.
 	 */
-	apply(actions)
+	applyDeletions(actions)
 	{
-		const deletions = actions.filter(a => a.type === 'delete');
-		const insertions = actions.filter(a => a.type === 'insert');
-		const moves = actions.filter(a => a.type === 'move');
-
-		// 1. Delete: reverse index order
-		for (const action of deletions.sort((a, b) => b.index - a.index))
+		for (const action of actions)
 		{
 			this.delete(action.index);
 		}
+	}
 
-		// 2. Insert: forward index order
-		for (const action of insertions.sort((a, b) => a.index - b.index))
+	/**
+	 * Apply insertion actions.
+	 * @param {object[]} actions List of insert actions.
+	 */
+	applyInsertions(actions)
+	{
+		for (const action of actions)
 		{
 			this.insert(action.index);
 		}
+	}
 
-		// 3. Move: target order
-		for (const action of moves)
+	/**
+	 * Apply move actions.
+	 * @param {object[]} actions List of move actions.
+	 */
+	applyMoves(actions)
+	{
+		for (const action of actions)
 		{
 			this.move(action.from, action.to);
 		}
@@ -85,72 +90,17 @@ if (typeof module !== 'undefined' && module.exports)
 
 /**
  * SeriesPatcher Class
- * Generates a sequence of actions to transform one array of unique values into another.
+ * Generates specific actions to transform one array of unique values into another, phase-by-phase.
  */
 class SeriesPatcher
 {
-	/**
-	 * Static helper to get actions without manual instantiation.
-	 * @param {any[]} source The starting array.
-	 * @param {any[]} target The target array.
-	 * @return {object[]} List of actions.
-	 */
-	static patch(source, target)
-	{
-		return (new SeriesPatcher).getActions(source, target);
-	}
-
-	/**
-	 * Calculates the actions required to transform source into target.
-	 * @param {any[]} source The starting array.
-	 * @param {any[]} target The target array.
-	 * @return {object[]} List of actions.
-	 */
-	getActions(source, target)
-	{
-		if (this._isIdentical(source, target))
-		{
-			return [];
-		}
-
-		this._ensureUnique(source);
-		this._ensureUnique(target);
-
-		return this._calculateActions(source, target);
-	}
-
-	/**
-	 * Checks if two arrays are identical in content and order.
-	 * @param {any[]} a First array.
-	 * @param {any[]} b Second array.
-	 * @return {boolean} True if identical.
-	 * @private
-	 */
-	_isIdentical(a, b)
-	{
-		if (a.length !== b.length)
-		{
-			return false;
-		}
-
-		for (let i = 0; i < a.length; i++)
-		{
-			if (a[i] !== b[i])
-			{
-				return false;
-			}
-		}
-
-		return true;
-	}
-
 	/**
 	 * Validates that all elements in the array are unique.
 	 * @param {any[]} array The array to check.
 	 * @throws {Error} If duplicates are found.
 	 * @private
 	 */
-	_ensureUnique(array)
+	static _ensureUnique(array)
 	{
 		const seen = new Set;
 
@@ -166,54 +116,27 @@ class SeriesPatcher
 	}
 
 	/**
-	 * Orchestrates the calculation of deletions, insertions, and moves.
-	 * @param {any[]} source The starting array.
-	 * @param {any[]} target The target array.
-	 * @return {object[]} List of actions.
-	 * @private
-	 */
-	_calculateActions(source, target)
-	{
-		const actions = [];
-		const working = [...source];
-
-		// 1. Calculate Deletions
-		const deletions = this._calculateDeletions(working, target);
-		actions.push(...deletions);
-		deletions.forEach(a => working.splice(a.index, 1));
-
-		// 2. Calculate Insertions
-		const insertions = this._calculateInsertions(working, target);
-		actions.push(...insertions);
-		insertions.forEach(a => working.splice(a.index, 0, a.value));
-
-		// 3. Calculate Moves
-		const moves = this._calculateMoves(working, target);
-		actions.push(...moves);
-
-		return actions;
-	}
-
-	/**
-	 * Identifies elements in working that are not in target.
-	 * @param {any[]} working The current state of the array.
-	 * @param {any[]} target The target array.
+	 * Identifies elements in source that are not in target.
+	 * @param {any[]} source 
+	 * @param {any[]} target 
 	 * @return {object[]} Deletion actions.
-	 * @private
 	 */
-	_calculateDeletions(working, target)
+	static generateDeletions(source, target)
 	{
+		this._ensureUnique(source);
+		this._ensureUnique(target);
+
 		const targetSet = new Set(target);
 		const actions = [];
 		// Deleting in reverse order to keep indices valid during calculation
-		for (let i = working.length - 1; i >= 0; i--)
+		for (let i = source.length - 1; i >= 0; i--)
 		{
-			if (!targetSet.has(working[i]))
+			if (!targetSet.has(source[i]))
 			{
 				actions.push({
 					type: 'delete',
 					index: i,
-					value: working[i]
+					value: source[i]
 				});
 			}
 		}
@@ -222,19 +145,21 @@ class SeriesPatcher
 	}
 
 	/**
-	 * Identifies elements in target that are not in working.
-	 * @param {any[]} working The current state of the array.
-	 * @param {any[]} target The target array.
+	 * Identifies elements in target that are not in source.
+	 * @param {any[]} source 
+	 * @param {any[]} target 
 	 * @return {object[]} Insertion actions.
-	 * @private
 	 */
-	_calculateInsertions(working, target)
+	static generateInsertions(source, target)
 	{
-		const workingSet = new Set(working);
+		this._ensureUnique(source);
+		this._ensureUnique(target);
+
+		const sourceSet = new Set(source);
 		const actions = [];
 		for (let i = 0; i < target.length; i++)
 		{
-			if (!workingSet.has(target[i]))
+			if (!sourceSet.has(target[i]))
 			{
 				actions.push({
 					type: 'insert',
@@ -248,16 +173,18 @@ class SeriesPatcher
 	}
 
 	/**
-	 * Calculates move actions once working and target have the same elements.
-	 * @param {any[]} working The current state of the array.
-	 * @param {any[]} target The target array.
+	 * Calculates move actions once source and target have the same elements.
+	 * @param {any[]} source 
+	 * @param {any[]} target 
 	 * @return {object[]} Move actions.
-	 * @private
 	 */
-	_calculateMoves(working, target)
+	static generateMoves(source, target)
 	{
+		this._ensureUnique(source);
+		this._ensureUnique(target);
+
 		const actions = [];
-		const current = [...working];
+		const current = [...source];
 
 		for (let i = 0; i < target.length; i++)
 		{
@@ -418,7 +345,6 @@ if (typeof module !== 'undefined' && module.exports)
 {
 	module.exports = { ColumnAlignmentApplier };
 }
-
 
 
 /**
@@ -669,11 +595,18 @@ class SheetPatcher
 	 */
 	_alignRows(newData)
 	{
-		const existingRows = this.sheet.getRange(1, 1, this.sheet.getLastRow(), 1).getValues().map(r => r[0]);
-		const newRows = newData.map(r => r[0]);
+		const getSource = () => this.sheet.getRange(1, 1, this.sheet.getLastRow(), 1).getValues().map(r => r[0]);
+		const target = newData.map(r => r[0]);
+		const applier = new RowAlignmentApplier(this.sheet);
 		
-		const actions = SortedSeriesPatcher.patch(existingRows, newRows);
-		new RowAlignmentApplier(this.sheet).apply(actions);
+		// 1. Deletions
+		applier.applyDeletions(SortedSeriesPatcher.generateDeletions(getSource(), target));
+		
+		// 2. Insertions
+		applier.applyInsertions(SortedSeriesPatcher.generateInsertions(getSource(), target));
+		
+		// 3. Moves
+		applier.applyMoves(SortedSeriesPatcher.generateMoves(getSource(), target));
 	}
 
 	/**
@@ -684,11 +617,20 @@ class SheetPatcher
 	 */
 	_alignColumns(newHeaderRow)
 	{
-		const existingCols = this.sheet.getRange(1, 1, 1, this.sheet.getLastColumn()).getValues()[0];
+		const getSource = () => this.sheet.getRange(1, 1, 1, this.sheet.getLastColumn()).getValues()[0];
+		const applier = new ColumnAlignmentApplier(this.sheet);
 		
-		const actions = SeriesPatcher.patch(existingCols, newHeaderRow);
-		new ColumnAlignmentApplier(this.sheet).apply(actions);
-		return actions;
+		// 1. Deletions
+		applier.applyDeletions(SeriesPatcher.generateDeletions(getSource(), newHeaderRow));
+		
+		// 2. Insertions
+		applier.applyInsertions(SeriesPatcher.generateInsertions(getSource(), newHeaderRow));
+		
+		// 3. Moves
+		const moves = SeriesPatcher.generateMoves(getSource(), newHeaderRow);
+		applier.applyMoves(moves);
+		
+		return moves; // Return moves to be compatible with replace()
 	}
 
 	/**
@@ -751,6 +693,5 @@ if (typeof module !== 'undefined' && module.exports)
 {
 	module.exports = { SheetPatcher };
 }
-
 
 

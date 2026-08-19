@@ -16,31 +16,36 @@ class AlignmentApplier
 	}
 
 	/**
-	 * Applies a sequence of actions from SeriesPatcher.
-	 * Strict order: delete (reverse index), insert (forward index), move (target order).
-	 * @param {object[]} actions List of actions.
-	 * @return {void}
+	 * Apply deletion actions.
+	 * @param {object[]} actions List of delete actions.
 	 */
-	apply(actions)
+	applyDeletions(actions)
 	{
-		const deletions = actions.filter(a => a.type === 'delete');
-		const insertions = actions.filter(a => a.type === 'insert');
-		const moves = actions.filter(a => a.type === 'move');
-
-		// 1. Delete: reverse index order
-		for (const action of deletions.sort((a, b) => b.index - a.index))
+		for (const action of actions)
 		{
 			this.delete(action.index);
 		}
+	}
 
-		// 2. Insert: forward index order
-		for (const action of insertions.sort((a, b) => a.index - b.index))
+	/**
+	 * Apply insertion actions.
+	 * @param {object[]} actions List of insert actions.
+	 */
+	applyInsertions(actions)
+	{
+		for (const action of actions)
 		{
 			this.insert(action.index);
 		}
+	}
 
-		// 3. Move: target order
-		for (const action of moves)
+	/**
+	 * Apply move actions.
+	 * @param {object[]} actions List of move actions.
+	 */
+	applyMoves(actions)
+	{
+		for (const action of actions)
 		{
 			this.move(action.from, action.to);
 		}

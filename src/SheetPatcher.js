@@ -1,4 +1,3 @@
-
 /**
  * SheetPatcher Class
  * Handles structural alignment, column recovery, and granular minimal-diff updates.
@@ -247,11 +246,18 @@ class SheetPatcher
 	 */
 	_alignRows(newData)
 	{
-		const existingRows = this.sheet.getRange(1, 1, this.sheet.getLastRow(), 1).getValues().map(r => r[0]);
-		const newRows = newData.map(r => r[0]);
+		const getSource = () => this.sheet.getRange(1, 1, this.sheet.getLastRow(), 1).getValues().map(r => r[0]);
+		const target = newData.map(r => r[0]);
+		const applier = new RowAlignmentApplier(this.sheet);
 		
-		const actions = SortedSeriesPatcher.patch(existingRows, newRows);
-		new RowAlignmentApplier(this.sheet).apply(actions);
+		// 1. Deletions
+		applier.applyDeletions(SortedSeriesPatcher.generateDeletions(getSource(), target));
+		
+		// 2. Insertions
+		applier.applyInsertions(SortedSeriesPatcher.generateInsertions(getSource(), target));
+		
+		// 3. Moves
+		applier.applyMoves(SortedSeriesPatcher.generateMoves(getSource(), target));
 	}
 
 	/**
@@ -262,11 +268,20 @@ class SheetPatcher
 	 */
 	_alignColumns(newHeaderRow)
 	{
-		const existingCols = this.sheet.getRange(1, 1, 1, this.sheet.getLastColumn()).getValues()[0];
+		const getSource = () => this.sheet.getRange(1, 1, 1, this.sheet.getLastColumn()).getValues()[0];
+		const applier = new ColumnAlignmentApplier(this.sheet);
 		
-		const actions = SeriesPatcher.patch(existingCols, newHeaderRow);
-		new ColumnAlignmentApplier(this.sheet).apply(actions);
-		return actions;
+		// 1. Deletions
+		applier.applyDeletions(SeriesPatcher.generateDeletions(getSource(), newHeaderRow));
+		
+		// 2. Insertions
+		applier.applyInsertions(SeriesPatcher.generateInsertions(getSource(), newHeaderRow));
+		
+		// 3. Moves
+		const moves = SeriesPatcher.generateMoves(getSource(), newHeaderRow);
+		applier.applyMoves(moves);
+		
+		return moves; // Return moves to be compatible with replace()
 	}
 
 	/**
@@ -329,4 +344,3 @@ if (typeof module !== 'undefined' && module.exports)
 {
 	module.exports = { SheetPatcher };
 }
-
