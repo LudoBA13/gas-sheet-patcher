@@ -8,29 +8,19 @@ class SeriesPatcherTest
 	 */
 	run()
 	{
-		console.log('Running expanded SeriesPatcher tests...');
+		console.log('Running expanded SeriesPatcher tests with action inspection...');
 		
-		// Basic cases
 		this.testIdentical();
-		
-		// Pure operations
 		this.testPureDeletions();
 		this.testPureInsertions();
-		
-		// Mixed operations
-		this.testInsertAndDelete();
 		this.testReorderOnly();
+		this.testInsertAndDelete();
 		this.testComplexMix();
-		
-		// Edge cases
 		this.testDuplicatesThrow();
 		
 		console.log('All tests passed!');
 	}
 
-	/**
-	 * Basic assertion helper.
-	 */
 	assert(condition, message)
 	{
 		if (!condition)
@@ -39,44 +29,23 @@ class SeriesPatcherTest
 		}
 	}
 
-	/**
-	 * Equality assertion helper for arrays/objects.
-	 */
 	assertEqual(a, b, message)
 	{
 		const strA = JSON.stringify(a);
 		const strB = JSON.stringify(b);
-		
-		this.assert(strA === strB, `${message} (Expected ${strB}, got ${strA})`);
+		this.assert(strA === strB, `${message}\nExpected: ${strB}\nGot:      ${strA}`);
 	}
 
-	/**
-	 * Applies actions to a source array to verify the transformation.
-	 */
 	applyActions(source, actions)
 	{
 		const working = [...source];
-		
-		// Recreate the strict application order to verify the generated actions
 		const deletions = actions.filter(a => a.type === 'delete').sort((a, b) => b.index - a.index);
 		const insertions = actions.filter(a => a.type === 'insert').sort((a, b) => a.index - b.index);
 		const moves = actions.filter(a => a.type === 'move');
 
-		// 1. Delete: reverse index order
-		for (const action of deletions)
-		{
-			working.splice(action.index, 1);
-		}
-
-		// 2. Insert: forward index order
-		for (const action of insertions)
-		{
-			working.splice(action.index, 0, action.value);
-		}
-
-		// 3. Move: target order
-		for (const action of moves)
-		{
+		for (const action of deletions) working.splice(action.index, 1);
+		for (const action of insertions) working.splice(action.index, 0, action.value);
+		for (const action of moves) {
 			working.splice(action.from, 1);
 			working.splice(action.to, 0, action.value);
 		}
@@ -97,40 +66,56 @@ class SeriesPatcherTest
 	{
 		const source = ['A', 'B', 'C', 'D'];
 		const target = ['A', 'C'];
+		const expectedActions = [
+			{ type: 'delete', index: 3, value: 'D' },
+			{ type: 'delete', index: 1, value: 'B' }
+		];
 		const actions = SeriesPatcher.patch(source, target);
-		const result = this.applyActions(source, actions);
 		
-		this.assertEqual(result, target, 'Should correctly handle pure deletions');
+		this.assertEqual(actions, expectedActions, 'Pure deletions');
+		this.assertEqual(this.applyActions(source, actions), target, 'Apply pure deletions');
 	}
 
 	testPureInsertions()
 	{
 		const source = ['A', 'C'];
 		const target = ['A', 'B', 'C', 'D'];
+		const expectedActions = [
+			{ type: 'insert', index: 1, value: 'B' },
+			{ type: 'insert', index: 3, value: 'D' }
+		];
 		const actions = SeriesPatcher.patch(source, target);
-		const result = this.applyActions(source, actions);
 		
-		this.assertEqual(result, target, 'Should correctly handle pure insertions');
+		this.assertEqual(actions, expectedActions, 'Pure insertions');
+		this.assertEqual(this.applyActions(source, actions), target, 'Apply pure insertions');
 	}
 
 	testReorderOnly()
 	{
 		const source = ['A', 'B', 'C'];
 		const target = ['C', 'B', 'A'];
+		const expectedActions = [
+			{ type: 'move', from: 2, to: 0, value: 'C' },
+			{ type: 'move', from: 2, to: 1, value: 'B' }
+		];
 		const actions = SeriesPatcher.patch(source, target);
-		const result = this.applyActions(source, actions);
 		
-		this.assertEqual(result, target, 'Should correctly reorder elements');
+		this.assertEqual(actions, expectedActions, 'Reorder only');
+		this.assertEqual(this.applyActions(source, actions), target, 'Apply reorder');
 	}
 
 	testInsertAndDelete()
 	{
 		const source = ['A', 'B'];
 		const target = ['B', 'C'];
+		const expectedActions = [
+			{ type: 'delete', index: 0, value: 'A' },
+			{ type: 'insert', index: 1, value: 'C' }
+		];
 		const actions = SeriesPatcher.patch(source, target);
-		const result = this.applyActions(source, actions);
 		
-		this.assertEqual(result, target, 'Should correctly handle simple mix of insertion and deletion');
+		this.assertEqual(actions, expectedActions, 'Simple mix');
+		this.assertEqual(this.applyActions(source, actions), target, 'Apply simple mix');
 	}
 
 	testComplexMix()
@@ -138,9 +123,11 @@ class SeriesPatcherTest
 		const source = ['A', 'B', 'C', 'D'];
 		const target = ['D', 'X', 'B', 'A'];
 		const actions = SeriesPatcher.patch(source, target);
-		const result = this.applyActions(source, actions);
 		
-		this.assertEqual(result, target, 'Should correctly handle complex mix of insert, delete, and move');
+		const expectedActions = [{"type":"delete","index":2,"value":"C"},{"type":"insert","index":1,"value":"X"},{"type":"move","from":3,"to":0,"value":"D"},{"type":"move","from":2,"to":1,"value":"X"},{"type":"move","from":3,"to":2,"value":"B"}];
+		
+		this.assertEqual(actions, expectedActions, 'Complex mix actions');
+		this.assertEqual(this.applyActions(source, actions), target, 'Apply complex mix');
 	}
 
 	testDuplicatesThrow()
@@ -152,7 +139,7 @@ class SeriesPatcherTest
 		}
 		catch (e)
 		{
-			this.assertEqual(e.message, 'Array values must be unique.', 'Correct error message for source duplicates');
+			this.assertEqual(e.message, 'Array values must be unique.', 'Error handling');
 		}
 	}
 }
@@ -163,12 +150,6 @@ if (typeof module !== 'undefined' && require.main === module)
 	const fs = require('fs');
 	const path = require('path');
 	const vm = require('vm');
-	
-	const codePath = path.join(__dirname, '../src/SeriesPatcher.js');
-	const code = fs.readFileSync(codePath, 'utf8');
-	
-	// Run the code in the current context
-	vm.runInThisContext(code);
-	
+	vm.runInThisContext(fs.readFileSync(path.join(__dirname, '../src/SeriesPatcher.js'), 'utf8'));
 	(new SeriesPatcherTest).run();
 }
