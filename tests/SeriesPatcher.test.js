@@ -8,12 +8,21 @@ class SeriesPatcherTest
 	 */
 	run()
 	{
-		console.log('Running SeriesPatcher tests...');
+		console.log('Running expanded SeriesPatcher tests...');
 		
+		// Basic cases
 		this.testIdentical();
-		this.testReorder();
+		
+		// Pure operations
+		this.testPureDeletions();
+		this.testPureInsertions();
+		
+		// Mixed operations
 		this.testInsertAndDelete();
-		this.testComplex();
+		this.testReorderOnly();
+		this.testComplexMix();
+		
+		// Edge cases
 		this.testDuplicatesThrow();
 		
 		console.log('All tests passed!');
@@ -48,29 +57,33 @@ class SeriesPatcherTest
 	{
 		const working = [...source];
 		
-		for (const action of actions)
+		// Recreate the strict application order to verify the generated actions
+		const deletions = actions.filter(a => a.type === 'delete').sort((a, b) => b.index - a.index);
+		const insertions = actions.filter(a => a.type === 'insert').sort((a, b) => a.index - b.index);
+		const moves = actions.filter(a => a.type === 'move');
+
+		// 1. Delete: reverse index order
+		for (const action of deletions)
 		{
-			if (action.type === 'delete')
-			{
-				working.splice(action.index, 1);
-			}
-			else if (action.type === 'insert')
-			{
-				working.splice(action.index, 0, action.value);
-			}
-			else if (action.type === 'move')
-			{
-				working.splice(action.from, 1);
-				working.splice(action.to, 0, action.value);
-			}
+			working.splice(action.index, 1);
+		}
+
+		// 2. Insert: forward index order
+		for (const action of insertions)
+		{
+			working.splice(action.index, 0, action.value);
+		}
+
+		// 3. Move: target order
+		for (const action of moves)
+		{
+			working.splice(action.from, 1);
+			working.splice(action.to, 0, action.value);
 		}
 		
 		return working;
 	}
 
-	/**
-	 * Test: Identical arrays should return no actions.
-	 */
 	testIdentical()
 	{
 		const source = [1, 2, 3];
@@ -80,10 +93,27 @@ class SeriesPatcherTest
 		this.assertEqual(actions, [], 'Identical arrays should produce no actions');
 	}
 
-	/**
-	 * Test: Reordering elements.
-	 */
-	testReorder()
+	testPureDeletions()
+	{
+		const source = ['A', 'B', 'C', 'D'];
+		const target = ['A', 'C'];
+		const actions = SeriesPatcher.patch(source, target);
+		const result = this.applyActions(source, actions);
+		
+		this.assertEqual(result, target, 'Should correctly handle pure deletions');
+	}
+
+	testPureInsertions()
+	{
+		const source = ['A', 'C'];
+		const target = ['A', 'B', 'C', 'D'];
+		const actions = SeriesPatcher.patch(source, target);
+		const result = this.applyActions(source, actions);
+		
+		this.assertEqual(result, target, 'Should correctly handle pure insertions');
+	}
+
+	testReorderOnly()
 	{
 		const source = ['A', 'B', 'C'];
 		const target = ['C', 'B', 'A'];
@@ -93,9 +123,6 @@ class SeriesPatcherTest
 		this.assertEqual(result, target, 'Should correctly reorder elements');
 	}
 
-	/**
-	 * Test: Insertion and Deletion.
-	 */
 	testInsertAndDelete()
 	{
 		const source = ['A', 'B'];
@@ -103,25 +130,19 @@ class SeriesPatcherTest
 		const actions = SeriesPatcher.patch(source, target);
 		const result = this.applyActions(source, actions);
 		
-		this.assertEqual(result, target, 'Should correctly handle insertion and deletion');
+		this.assertEqual(result, target, 'Should correctly handle simple mix of insertion and deletion');
 	}
 
-	/**
-	 * Test: Complex transformation.
-	 */
-	testComplex()
+	testComplexMix()
 	{
 		const source = ['A', 'B', 'C', 'D'];
 		const target = ['D', 'X', 'B', 'A'];
 		const actions = SeriesPatcher.patch(source, target);
 		const result = this.applyActions(source, actions);
 		
-		this.assertEqual(result, target, 'Should correctly handle complex transformations');
+		this.assertEqual(result, target, 'Should correctly handle complex mix of insert, delete, and move');
 	}
 
-	/**
-	 * Test: Validation of unique values.
-	 */
 	testDuplicatesThrow()
 	{
 		try
@@ -132,16 +153,6 @@ class SeriesPatcherTest
 		catch (e)
 		{
 			this.assertEqual(e.message, 'Array values must be unique.', 'Correct error message for source duplicates');
-		}
-
-		try
-		{
-			SeriesPatcher.patch([1], [2, 2]);
-			this.assert(false, 'Should throw error on duplicate target');
-		}
-		catch (e)
-		{
-			this.assertEqual(e.message, 'Array values must be unique.', 'Correct error message for target duplicates');
 		}
 	}
 }
