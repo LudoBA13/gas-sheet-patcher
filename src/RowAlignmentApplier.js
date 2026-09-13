@@ -1,6 +1,9 @@
 
 
-const { AlignmentApplier } = require('./AlignmentApplier');
+if (typeof module !== 'undefined' && module.exports)
+{
+	var { AlignmentApplier } = require('./AlignmentApplier');
+}
 
 /**
  * Concrete implementation for applying actions to rows.
