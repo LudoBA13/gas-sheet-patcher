@@ -23,7 +23,8 @@ FILES=(
 # Append files in order
 for file in "${FILES[@]}"; do
     echo "Appending $file..."
-    cat "$file" >> "$OUTPUT_FILE"
+    # Remove lines containing 'require' and 'module.exports' to ensure GAS compatibility
+    grep -vE "require\(|module\.exports" "$file" >> "$OUTPUT_FILE"
     echo -e "\n" >> "$OUTPUT_FILE"
 done
 

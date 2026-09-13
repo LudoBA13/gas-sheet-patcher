@@ -73,9 +73,7 @@ class AlignmentApplier
 	}
 }
 
-if (typeof module !== 'undefined' && module.exports)
 {
-	module.exports = { AlignmentApplier };
 }
 
 
@@ -297,9 +295,7 @@ class SeriesPatcher
 	}
 }
 
-if (typeof module !== 'undefined' && module.exports)
 {
-	module.exports = { SeriesPatcher };
 }
 
 
@@ -369,15 +365,14 @@ class SortedSeriesPatcher
 	}
 }
 
-if (typeof module !== 'undefined' && module.exports)
 {
-	module.exports = { SortedSeriesPatcher };
 }
 
 
 
 
-const { AlignmentApplier } = require('./AlignmentApplier');
+{
+}
 
 /**
  * Concrete implementation for applying actions to rows.
@@ -407,9 +402,7 @@ class RowAlignmentApplier extends AlignmentApplier
 	}
 }
 
-if (typeof module !== 'undefined' && module.exports)
 {
-	module.exports = { RowAlignmentApplier };
 }
 
 
@@ -439,9 +432,7 @@ class ColumnAlignmentApplier extends AlignmentApplier
 	}
 }
 
-if (typeof module !== 'undefined' && module.exports)
 {
-	module.exports = { ColumnAlignmentApplier };
 }
 
 
@@ -772,9 +763,7 @@ class SheetPatcher
 	}
 }
 
-if (typeof module !== 'undefined' && module.exports)
 {
-	module.exports = { SheetPatcher };
 }
 
 
