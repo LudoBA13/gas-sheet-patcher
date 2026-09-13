@@ -377,6 +377,8 @@ if (typeof module !== 'undefined' && module.exports)
 
 
 
+const { AlignmentApplier } = require('./AlignmentApplier');
+
 /**
  * Concrete implementation for applying actions to rows.
  */
@@ -389,7 +391,14 @@ class RowAlignmentApplier extends AlignmentApplier
 
 	insert(index)
 	{
-		this.sheet.insertRowBefore(index + 1);
+		if (index === 0)
+		{
+			this.sheet.insertRowBefore(1);
+		}
+		else if (index > 0)
+		{
+			this.sheet.insertRowAfter(index);
+		}
 	}
 
 	move(from, to)
