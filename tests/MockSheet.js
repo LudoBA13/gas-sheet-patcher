@@ -56,6 +56,13 @@ class MockSheet
 		this.maxRows++;
 	}
 
+	insertRowAfter(row)
+	{
+		const newRow = new Array(this.getLastColumn()).fill('');
+		this.data.splice(row, 0, newRow);
+		this.maxRows++;
+	}
+
 	deleteRow(row)
 	{
 		this.data.splice(row - 1, 1);
